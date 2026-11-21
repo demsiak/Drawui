@@ -60,12 +60,14 @@ This needs no files: paste the line into your executor and run it.
 local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/demsiak/Drawui/main/Drawui.luau"))()
 ```
 
-`main` always points at the latest version. To pin a version that never changes, replace `main` with
-a commit hash taken from the repository history:
+`main` always points at the latest version. To pin a release that never changes, replace `main` with
+its tag (see [Releases](https://github.com/demsiak/Drawui/releases) and [CHANGELOG.md](CHANGELOG.md)):
 
 ```lua
-local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/demsiak/Drawui/<commit>/Drawui.luau"))()
+local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/demsiak/Drawui/v1.0.0/Drawui.luau"))()
 ```
+
+`UI.Version` holds the loaded version.
 
 ### From a local file
 
@@ -361,7 +363,7 @@ sugar keys, events, enum values and `UI.` members, shows hover docs, and adds sn
 ```powershell
 cd vscode
 .\build-vsix.ps1
-code --install-extension .\drawui-0.1.0.vsix
+code --install-extension .\drawui-1.0.0.vsix
 ```
 
 ## Development

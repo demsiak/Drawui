@@ -3,7 +3,7 @@ return function(UI, ctx)
     local U = {}
     ctx.U = U
 
-    UI.Version = "2.0.0"
+    UI.Version = "1.0.0"
     UI.Fonts = { UI = 0, System = 1, Plex = 2, Monospace = 3 }
 
     U.ZERO = Vector2.new(0, 0)
