@@ -14,7 +14,13 @@ return function(UI, ctx)
 
     -- Topmost hit region under `point`; rounded corners (UICorner) are respected.
     local function inside(h, point)
-        if h.node._dead or not ctx.contains(h.rect, point) then return false end
+        if h.node._dead then return false end
+        if h.transform then
+            -- Rotated object: test in its unrotated local space, limited by the screen clip.
+            if h.screenClip and not ctx.contains(h.screenClip, point) then return false end
+            point = ctx.invertTransform(h.transform, point)
+        end
+        if not ctx.contains(h.rect, point) then return false end
         local r = h.radius or 0
         if r < 1 then return true end
         local p, s = h.pos, h.size

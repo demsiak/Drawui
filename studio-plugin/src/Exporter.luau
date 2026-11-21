@@ -96,7 +96,7 @@ local GUI = {
 	{ "AnchorPoint", Vector2.zero }, { "Position", UDim2.new() }, { "Size", UDim2.fromOffset(100, 100) },
 	{ "AutomaticSize", "None" }, { "BackgroundColor3", rgb(30, 33, 43) }, { "BackgroundTransparency", 0 },
 	{ "BorderColor3", rgb(64, 69, 85) }, { "BorderSizePixel", 0 }, { "Visible", true }, { "ZIndex", 1 },
-	{ "LayoutOrder", 0 }, { "ClipsDescendants", false }, { "Interactable", true },
+	{ "LayoutOrder", 0 }, { "ClipsDescendants", false }, { "Interactable", true }, { "Rotation", 0 },
 }
 local TEXT = {
 	{ "TextColor3", rgb(255, 255, 255) }, { "TextSize", 16 }, { "TextTransparency", 0 },
@@ -153,14 +153,14 @@ local HIDDEN = {
 
 local MODIFIERS = {
 	UICorner = true, UIStroke = true, UIGradient = true, UIPadding = true, UIListLayout = true, UIGridLayout = true,
-	UIScale = true, UIAspectRatioConstraint = true, UISizeConstraint = true, UITextSizeConstraint = true,
+	UIScale = true, UIAspectRatioConstraint = true, UISizeConstraint = true, UITextSizeConstraint = true, UIShadow = true,
 }
 -- Children that are fine to drop silently (scripts, values, folders of tooling).
 local IGNORED = { Script = true, LocalScript = true, ModuleScript = true, Folder = true, Configuration = true }
 
 -- Properties Drawui doesn't support: reported when they differ from Roblox's default.
 local UNSUPPORTED = {
-	{ "Rotation", 0 }, { "RichText", false }, { "TextTruncate", "None" }, { "ScaleType", "Stretch" },
+	{ "RichText", false }, { "TextTruncate", "None" }, { "ScaleType", "Stretch" },
 	{ "ImageRectSize", Vector2.zero }, { "ImageRectOffset", Vector2.zero }, { "SizeConstraint", "RelativeXY" },
 	{ "BorderMode", "Outline" },
 }
@@ -254,6 +254,17 @@ local function sugar(m)
 		return "SizeLimit = " .. propsTable({ "MinSize = " .. value(m.MinSize), "MaxSize = " .. value(m.MaxSize) })
 	elseif c == "UITextSizeConstraint" then
 		return "TextSizeLimit = " .. propsTable({ "MinTextSize = " .. num(m.MinTextSize), "MaxTextSize = " .. num(m.MaxTextSize) })
+	elseif c == "UIShadow" then
+		-- A table is passed through as-is (no preset), so only Roblox-default values are left out.
+		local entries = {}
+		local function add(prop, default, format)
+			local v = read(m, prop)
+			if v ~= nil and not same(v, default) then table.insert(entries, prop .. " = " .. (format or value)(v)) end
+		end
+		add("BlurRadius", UDim.new(), udim); add("Offset", UDim2.new()); add("Spread", UDim2.new())
+		add("Color", rgb(0, 0, 0)); add("Transparency", 0); add("Inset", false); add("Mode", "Shape")
+		add("ShowBehindParent", true); add("Enabled", true)
+		return "Shadow = " .. propsTable(entries)
 	end
 end
 
@@ -276,6 +287,18 @@ function Writer:object(inst, depth, extra)
 	for _, u in UNSUPPORTED do
 		local v = read(inst, u[1])
 		if v ~= nil and u[2] ~= nil and not same(v, u[2]) then self:warn(inst, u[1] .. " = " .. value(v) .. " is not supported") end
+	end
+	if read(inst, "Rotation") and inst.Rotation % 360 ~= 0 then
+		local upright = {}
+		for _, d in { inst, table.unpack(inst:GetDescendants()) } do
+			if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") or d:IsA("ImageLabel") or d:IsA("ImageButton") then
+				table.insert(upright, d.Name)
+			end
+		end
+		if #upright > 0 then
+			self:warn(inst, "rotated; Drawui keeps text and images upright (" .. table.concat(upright, ", ", 1, math.min(#upright, 4))
+				.. (#upright > 4 and ", ..." or "") .. ")")
+		end
 	end
 	if (inst:IsA("ImageLabel") or inst:IsA("ImageButton")) and inst.Image ~= "" then
 		self:warn(inst, "Image " .. inst.Image .. " is passed to Drawing Image.Data as-is; most executors need image data or a URL")
@@ -361,7 +384,7 @@ function Exporter.Export(roots, options)
 	local out = {}
 	table.insert(out, "-- Exported from Roblox Studio with the Drawui exporter.")
 	if #w.warnings > 0 then
-		table.insert(out, "-- Not exported:")
+		table.insert(out, "-- Notes (not exported or drawn differently):")
 		for _, text in w.warnings do table.insert(out, "--   " .. text) end
 	end
 	table.insert(out, Exporter.Loaders[options.loader or "github"] or Exporter.Loaders.github)

@@ -18,9 +18,11 @@ return function(UI, ctx)
             p.BorderColor3 = Color3.fromRGB(64, 69, 85); p.BorderSizePixel = 0
             p.ZIndex = 1; p.LayoutOrder = 0; p.ClipsDescendants = false; p.AutomaticSize = "None"
             p.AbsolutePosition = U.ZERO; p.AbsoluteSize = U.ZERO
+            p.Rotation = 0; p.AbsoluteRotation = 0
         end,
         Hittable = function(n) return n._p.Active end,
     })
+    ctx.readonly.AbsoluteRotation = true
 
     UI.RegisterClass("GuiObject", { Base = "GuiBase", Abstract = true })
 
@@ -71,7 +73,15 @@ return function(UI, ctx)
             color, alpha = U.multiply(color, c), alpha * a
         end
         if alpha <= 0 then return end
-        ctx.primitive(n, "Image", { Data = p.Image, Position = style.pos, Size = style.size, Rounding = style.radius,
+        local at = style.pos
+        if ctx.transform then
+            -- Drawing Image can't rotate: draw it upright around the rotated centre.
+            local half = style.size / 2
+            local center = ctx.applyTransform(ctx.transform, style.pos + half)
+            if not ctx.fullyInside(ctx.rect(center - half, style.size), ctx.screenClip) then return end
+            at = center - half
+        end
+        ctx.primitive(n, "Image", { Data = p.Image, Position = at, Size = style.size, Rounding = style.radius,
             Color = color, Transparency = U.clamp(alpha, 0, 1) })
     end
 end

@@ -32,18 +32,19 @@ Panel options:
 ## What gets exported
 
 - `ScreenGui`, `Frame`, `CanvasGroup`, `TextLabel`, `TextButton`, `TextBox`, `ImageLabel`, `ImageButton`, `ScrollingFrame`
-- Every property that differs from Drawui's default (`Position`, `Size`, colours, text, alignment, `LayoutOrder`, `ZIndex`, ...).
+- Every property that differs from Drawui's default (`Position`, `Size`, `Rotation`, colours, text, alignment, `LayoutOrder`, `ZIndex`, ...).
   Values with no visible effect are left out, such as `BorderColor3` when `BorderSizePixel` is 0.
 - Modifiers as builder sugar: `UICorner` → `Corner`, `UIStroke` → `Stroke`, `UIGradient` → `Gradient`, `UIPadding` → `Padding`,
   `UIListLayout` → `List`, `UIGridLayout` → `Grid`, `UIScale` → `Scale`, `UIAspectRatioConstraint` → `AspectRatio`,
-  `UISizeConstraint` → `SizeLimit`, `UITextSizeConstraint` → `TextSizeLimit`
+  `UISizeConstraint` → `SizeLimit`, `UITextSizeConstraint` → `TextSizeLimit`, `UIShadow` → `Shadow` (all properties, including `Inset` and `Mode = "Text"`)
 - Fonts: `Code` / `RobotoMono` become `UI.Fonts.Monospace`, `Arial` / `SourceSans` become `UI.Fonts.System`, and anything else uses the default UI font.
 
 Anything Drawui can't reproduce is listed in a comment at the top of the script:
 
 - unsupported classes (`ViewportFrame`, `VideoFrame`, `UIPageLayout`, ...), which are skipped
-- unsupported properties (`Rotation`, `RichText`, `TextTruncate`, `ScaleType`, `ImageRectSize`, ...)
+- unsupported properties (`RichText`, `TextTruncate`, `ScaleType`, `ImageRectSize`, ...)
 - a second modifier of the same class on one object
+- rotated objects that contain text or images (Drawui keeps those upright)
 - `rbxassetid://` images, which most executors can't load through `Drawing` Image
 
 Scripts and folders inside the UI are ignored.

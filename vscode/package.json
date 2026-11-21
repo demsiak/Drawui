@@ -2,7 +2,7 @@
   "name": "drawui",
   "displayName": "Drawui",
   "description": "Completion, hover docs and snippets for the Drawui UI library for Roblox executors.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "demsiak",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/demsiak/Drawui" },

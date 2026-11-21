@@ -155,7 +155,7 @@ print(card.Title.Text) --> "Card" (children can be found by Name)
 | `Corner` | UICorner | `8`, `UDim.new(0.5, 0)`, `{ CornerRadius = ... }` |
 | `Stroke` | UIStroke | `Color3`, thickness number, `true`, or a props table |
 | `Gradient` | UIGradient | `{ c1, c2, ... }`, `ColorSequence`, or `{ Color = ..., Rotation = ..., Transparency = ... }` |
-| `Shadow` | UIShadow | `true` or `{ Blur = 20, Offset = Vector2.new(0, 8), Transparency = 0.4 }` |
+| `Shadow` | UIShadow | `true` (soft preset) or a props table: `{ BlurRadius = 20, Offset = Vector2.new(0, 8), Transparency = 0.4 }` |
 | `Padding` | UIPadding | number / `UDim` for all sides, or `{ Left, Right, Top, Bottom, Horizontal, Vertical }` |
 | `List` | UIListLayout | padding number, `true`, or a props table |
 | `Grid` | UIGridLayout | props table (`CellSize`, `CellPadding`, ...) |
@@ -168,7 +168,13 @@ print(card.Title.Text) --> "Card" (children can be found by Name)
 
 All GUI objects share `Name`, `Visible`, `Position`, `Size`, `AnchorPoint`, `BackgroundColor3`,
 `BackgroundTransparency`, `BorderColor3`, `BorderSizePixel`, `ZIndex`, `LayoutOrder`, `ClipsDescendants`,
-`AutomaticSize`, `Active`, `Interactable`, plus the read-only `AbsolutePosition` and `AbsoluteSize`.
+`AutomaticSize`, `Active`, `Interactable`, `Rotation`, plus the read-only `AbsolutePosition`, `AbsoluteSize` and
+`AbsoluteRotation`.
+
+`Rotation` (degrees, clockwise, around the centre) rotates the object and its whole subtree: backgrounds,
+corners, strokes, gradients, shadows, layout and hit areas. Text and images keep their upright orientation,
+because `Drawing` can't rotate them; they move with the rotation instead. As in Roblox,
+`ClipsDescendants` has no effect inside a rotated object.
 
 | Class | Extra properties |
 |---|---|
@@ -192,7 +198,7 @@ Modifiers are children that change their parent, as in Roblox.
 | `UICorner` | `CornerRadius` (UDim or number). Rounds the background, border, strokes, gradient, image and hit area. `UDim.new(0.5, 0)` gives a pill or circle |
 | `UIStroke` | `Color`, `Thickness`, `Transparency`, `Enabled`, `ApplyStrokeMode` (`Contextual` outlines the text of text objects, `Border` always outlines the box), `BorderStrokePosition` (`Outer` / `Center` / `Inner`), `LineJoinMode` (`Round` / `Miter` / `Bevel`) |
 | `UIGradient` | `Color` (ColorSequence, Color3 or a list of colours), `Transparency` (NumberSequence, number or a list), `Rotation` (any angle), `Offset`, `Enabled`, `ApplyToText`* |
-| `UIShadow`* | `Color`, `Transparency`, `Offset`, `Blur`, `Spread`, `Enabled`: a soft drop shadow |
+| `UIShadow` | Same API as Roblox: `Color`, `Transparency`, `BlurRadius` (UDim or number), `Offset` and `Spread` (UDim2, Vector2 or number), `Inset` (inner shadow), `Mode` (`Shape` / `Text` for a text drop shadow), `ShowBehindParent`, `Enabled`. Text-mode shadows can't blur |
 | `UIPadding` | `PaddingLeft`, `PaddingRight`, `PaddingTop`, `PaddingBottom` (UDim or number) |
 | `UIListLayout` | `FillDirection`, `Padding`, `SortOrder`, `HorizontalAlignment`, `VerticalAlignment`, `Wraps`, `AbsoluteContentSize` |
 | `UIGridLayout` | `CellSize`, `CellPadding`, `FillDirection`, `FillDirectionMaxCells`, `SortOrder`, alignments |
@@ -201,7 +207,7 @@ Modifiers are children that change their parent, as in Roblox.
 | `UISizeConstraint` | `MinSize`, `MaxSize` |
 | `UITextSizeConstraint` | `MinTextSize`, `MaxTextSize` (limits `TextScaled`) |
 
-\* Drawui extensions that don't exist in Roblox. `UIGradient.ApplyToText = false` keeps text and image colours
+\* A Drawui extension that doesn't exist in Roblox. `UIGradient.ApplyToText = false` keeps text and image colours
 untinted. The default is `true`, which matches Roblox.
 
 ```lua
@@ -353,7 +359,8 @@ documented at the top of [`src/Core/Registry.luau`](src/Core/Registry.luau).
   anti-aliases each primitive separately. Opaque shapes are drawn with overlapping pieces and have no seams.
 - The TextBox cursor is drawn for single-line text only.
 - Tweens don't support `RepeatCount` or `Reverses`.
-- `UIShadow` is drawn as stacked layers, so very large blurs cost more drawings.
+- `UIShadow` blur is drawn as stacked layers, so very large blurs cost more drawings. Text-mode shadows are not blurred.
+- Text and images stay upright inside rotated objects.
 
 ## VS Code extension
 
@@ -364,7 +371,7 @@ sugar keys, events, enum values and `UI.` members, shows hover docs, and adds sn
 ```powershell
 cd vscode
 .\build-vsix.ps1
-code --install-extension .\drawui-1.0.0.vsix
+code --install-extension .\drawui-1.1.0.vsix
 ```
 
 ## Roblox Studio exporter

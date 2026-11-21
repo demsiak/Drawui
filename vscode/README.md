@@ -17,5 +17,5 @@ API data lives in `api.json`; update it when the library adds properties.
 
 ```powershell
 .\build-vsix.ps1
-code --install-extension .\drawui-1.0.0.vsix
+code --install-extension .\drawui-1.1.0.vsix
 ```

@@ -12,7 +12,8 @@
     "BorderStrokePosition": ["Outer", "Center", "Inner"],
     "LineJoinMode": ["Round", "Miter", "Bevel"],
     "DominantAxis": ["Width", "Height"],
-    "AspectType": ["FitWithinMaxSize", "ScaleWithParentSize"]
+    "AspectType": ["FitWithinMaxSize", "ScaleWithParentSize"],
+    "ApplyShadowMode": ["Shape", "Text"]
   },
   "classes": {
     "Instance": {
@@ -38,6 +39,8 @@
         "LayoutOrder": { "type": "number", "default": "0", "doc": "Order inside UIListLayout / UIGridLayout." },
         "ClipsDescendants": { "type": "boolean", "default": "false", "doc": "Clip children to this object's box." },
         "AutomaticSize": { "type": "enum", "enum": "AutomaticSize", "default": "\"None\"", "doc": "Grow to fit children / text." },
+        "Rotation": { "type": "number", "default": "15", "doc": "Degrees, clockwise, around the object's centre. Rotates the subtree; text and images stay upright (Drawing can't rotate them). ClipsDescendants is ignored inside rotated objects." },
+        "AbsoluteRotation": { "type": "number", "readonly": true, "doc": "Rotation including all ancestors (read-only)." },
         "AbsolutePosition": { "type": "Vector2", "readonly": true, "doc": "Screen position in pixels (read-only)." },
         "AbsoluteSize": { "type": "Vector2", "readonly": true, "doc": "Size in pixels (read-only)." }
       }
@@ -139,13 +142,16 @@
       }
     },
     "UIShadow": {
-      "base": "UIComponent", "doc": "Drawui extension: soft drop shadow behind the parent.",
+      "base": "UIComponent", "doc": "Shadow of the parent's box (Mode = Shape) or text (Mode = Text), like Roblox's UIShadow.",
       "props": {
         "Color": { "type": "Color3", "default": "Color3.new(0, 0, 0)" },
         "Transparency": { "type": "number", "default": "0.5" },
-        "Offset": { "type": "Vector2", "default": "Vector2.new(0, 6)" },
-        "Blur": { "type": "number", "default": "18" },
-        "Spread": { "type": "number", "default": "0" },
+        "BlurRadius": { "type": "UDim", "default": "UDim.new(0, 18)", "doc": "Blur size; a number means pixels. Ignored in Text mode." },
+        "Offset": { "type": "UDim2", "default": "UDim2.fromOffset(0, 6)", "doc": "Shadow offset; a Vector2 means pixels." },
+        "Spread": { "type": "UDim2", "default": "UDim2.fromOffset(4, 4)", "doc": "Grows (or with Inset, shrinks) the shadow per side; a number / Vector2 means pixels." },
+        "Inset": { "type": "boolean", "default": "true", "doc": "Inner shadow drawn inside the parent's shape." },
+        "Mode": { "type": "enum", "enum": "ApplyShadowMode", "default": "\"Shape\"", "doc": "Shape = shadow of the box, Text = drop shadow under the text." },
+        "ShowBehindParent": { "type": "boolean", "default": "false", "doc": "false draws a Shape shadow over the parent's background." },
         "Enabled": { "type": "boolean", "default": "true" }
       }
     },
@@ -224,7 +230,7 @@
     "Corner": { "class": "UICorner", "snippet": "Corner = ${1:8}", "doc": "Adds a UICorner. Number, UDim or { CornerRadius = ... }." },
     "Stroke": { "class": "UIStroke", "snippet": "Stroke = { Color = ${1:Color3.fromRGB(60, 66, 85)}, Thickness = ${2:1} }", "doc": "Adds a UIStroke. Color3, thickness number, true or a props table." },
     "Gradient": { "class": "UIGradient", "snippet": "Gradient = { Color = { ${1:Color3.fromRGB(100, 140, 255)}, ${2:Color3.fromRGB(150, 110, 255)} }, Rotation = ${3:0} }", "doc": "Adds a UIGradient. List of Color3, ColorSequence or a props table." },
-    "Shadow": { "class": "UIShadow", "snippet": "Shadow = ${1:true}", "doc": "Adds a UIShadow. true or a props table." },
+    "Shadow": { "class": "UIShadow", "snippet": "Shadow = { BlurRadius = ${1:18}, Offset = ${2:Vector2.new(0, 6)}, Transparency = ${3:0.5} }", "doc": "Adds a UIShadow. true (soft preset) or a props table (BlurRadius, Offset, Spread, Transparency, Color, Inset, Mode)." },
     "Padding": { "class": "UIPadding", "snippet": "Padding = ${1:8}", "doc": "Adds a UIPadding. Number / UDim for all sides, or { Left, Right, Top, Bottom, Horizontal, Vertical }.", "keys": ["Left", "Right", "Top", "Bottom", "Horizontal", "Vertical"] },
     "Scale": { "class": "UIScale", "snippet": "Scale = ${1:1}", "doc": "Adds a UIScale." },
     "AspectRatio": { "class": "UIAspectRatioConstraint", "snippet": "AspectRatio = ${1:1}", "doc": "Adds a UIAspectRatioConstraint." },

@@ -157,12 +157,53 @@ check("UIGradient: colour bands, rotation and rounded clipping",function()
     g.Transparency=NumberSequence.new(0,1); UI.Refresh()
     f:Destroy()
 end)
-check("UIShadow draws behind and below the frame",function()
+check("UIShadow (Roblox API): outer, inset, text mode, coercion",function()
     local f=UI.new("Frame",{Parent=root,Position=UDim2.fromOffset(600,600),Size=UDim2.fromOffset(100,60)})
-    UI.new("UIShadow",{Parent=f,Blur=12,Offset=Vector2.new(0,8)}); UI.Refresh()
+    local s=UI.new("UIShadow",{Parent=f,BlurRadius=12,Offset=Vector2.new(0,8),Transparency=0.4})
+    assert(typeof(s.BlurRadius)=="UDim" and typeof(s.Offset)=="UDim2" and s.Offset.Y.Offset==8 and s.Mode=="Shape")
+    UI.Refresh()
     local maxY=0
     for _,props in ipairs(visibleDraws(f,"Square")) do maxY=math.max(maxY,props.Position.Y+props.Size.Y) end
-    assert(maxY>660)
+    assert(maxY>660, maxY)
+    -- Inset: shadow stays inside the frame.
+    s.Inset=true; UI.Refresh()
+    for _,props in ipairs(visibleDraws(f)) do
+        for _,k in ipairs({"PointA","PointB","PointC","PointD"}) do
+            if props[k] then assert(props[k].X>=600-0.01 and props[k].X<=700.01 and props[k].Y>=600-0.01 and props[k].Y<=660.01) end
+        end
+    end
+    s:Destroy()
+    -- Text mode: a second, offset Text drawing under the label.
+    local t=UI.new("TextLabel",{Parent=root,Text="Shadow",Position=UDim2.fromOffset(600,700),Size=UDim2.fromOffset(120,30)})
+    UI.new("UIShadow",{Parent=t,Mode="Text",Offset=Vector2.new(2,2),Color=Color3.new(1,0,0)}); UI.Refresh()
+    local texts=visibleDraws(t,"Text"); assert(#texts==2, #texts)
+    table.sort(texts,function(a,b) return a.ZIndex<b.ZIndex end)
+    assert(texts[1].Color==Color3.new(1,0,0) and texts[1].Position.X==texts[2].Position.X+2)
+    -- Builder: Shadow = true preset, legacy Blur key.
+    local b=UI.New "Frame" {Parent=root,Shadow={Blur=10,Offset=Vector2.new(0,4)}}
+    assert(b:FindFirstChildOfClass("UIShadow").BlurRadius.Offset==10)
+    local c=UI.New "Frame" {Parent=root,Shadow=true}
+    assert(c:FindFirstChildOfClass("UIShadow").BlurRadius.Offset==18)
+    f:Destroy(); t:Destroy(); b:Destroy(); c:Destroy()
+end)
+check("Rotation: rotated geometry, upright text, hit testing, AbsoluteRotation",function()
+    local f=UI.new("TextButton",{Parent=root,Text="R",Position=UDim2.fromOffset(600,600),Size=UDim2.fromOffset(100,40),Rotation=90,ZIndex=50})
+    local child=UI.new("Frame",{Parent=f,Size=UDim2.fromOffset(10,10),Rotation=15})
+    UI.Refresh()
+    near(f.AbsoluteRotation,90); near(child.AbsoluteRotation,105)
+    -- 90 degrees around the centre (650,620): the box becomes 40 wide x 100 tall.
+    local sq=visibleDraws(f,"Square")[1]
+    near(sq.Position.X,630); near(sq.Position.Y,570); near(sq.Size.X,40); near(sq.Size.Y,100)
+    -- Text stays upright, centred on the rotated centre.
+    local txt=visibleDraws(f,"Text")[1]; assert(txt and math.abs(txt.Position.Y+txt.Size/2-620)<txt.Size)
+    -- Hit testing follows the rotation: (650,580) is inside the rotated box, (610,620) is not.
+    assert(table.find(UI.GetGuiObjectsAtPosition(650,580),f))
+    assert(not table.find(UI.GetGuiObjectsAtPosition(610,620),f))
+    -- 45 degrees: Quads, no Squares.
+    f.Rotation=45; UI.Refresh()
+    assert(#visibleDraws(f,"Square")==0 and #visibleDraws(f,"Quad")>0)
+    f.Rotation=0; UI.Refresh()
+    assert(#visibleDraws(f,"Square")>0)
     f:Destroy()
 end)
 check("builder: sugar, named children, events, refs, OnChange",function()

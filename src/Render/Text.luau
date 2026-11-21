@@ -143,8 +143,24 @@ return function(UI, ctx)
                     end
                     text = result
                 end
+                local at = Vector2.new(x, yy)
+                local t = ctx.transform
+                if t and text ~= "" then
+                    -- Drawing Text can't rotate: keep the glyphs upright, centred on the rotated line centre.
+                    local half = Vector2.new(measure(text, size, p.Font).X / 2, glyphHeight / 2)
+                    local center = ctx.applyTransform(t, at + half)
+                    at = center - half
+                    if not ctx.contains(ctx.screenClip, center) then text = "" end
+                end
+                local shadow = style.textShadow
+                if shadow and text ~= "" and opacity * shadow.Opacity > 0 then
+                    local sp = at + shadow.Offset
+                    ctx.primitive(n, "Text", { Position = Vector2.new(math.floor(sp.X), math.floor(sp.Y)), Text = text,
+                        Font = fontId(p.Font), Size = size, Color = shadow.Color, Center = false,
+                        Transparency = clamp(opacity * shadow.Opacity, 0, 1), Outline = false, OutlineColor = shadow.Color })
+                end
                 if text ~= "" and opacity > 0 then
-                    ctx.primitive(n, "Text", { Position = Vector2.new(math.floor(x), math.floor(yy)), Text = text,
+                    ctx.primitive(n, "Text", { Position = Vector2.new(math.floor(at.X), math.floor(at.Y)), Text = text,
                         Font = fontId(p.Font), Size = size, Color = color, Center = false,
                         Transparency = clamp(opacity, 0, 1), Outline = outline, OutlineColor = outlineColor })
                 end

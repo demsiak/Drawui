@@ -15,6 +15,13 @@ return function(UI, ctx)
         table.clear(n._counts)
         local def = n._class
         local pos, size = p.AbsolutePosition, p.AbsoluteSize
+        -- Rotation: draw this subtree in local space through a transform around the object's centre.
+        local savedTransform, savedScreenClip = ctx.transform, ctx.screenClip
+        if p.Rotation % 360 ~= 0 then
+            if not ctx.transform then ctx.screenClip = parentClip end
+            ctx.transform = ctx.composeRotation(ctx.transform, pos + size / 2, math.rad(p.Rotation))
+            parentClip = ctx.HUGE_CLIP
+        end
         local area = ctx.rect(pos, size)
         local visible = ctx.intersect(area, parentClip)
         local style = { pos = pos, size = size, area = area, visible = visible, clip = parentClip,
@@ -35,14 +42,17 @@ return function(UI, ctx)
         if ctx.nonempty(visible) then
             if def.Draw then def.Draw(n, style, ctx) end
             if def.Hittable and def.Hittable(n) and p.Interactable and style.opacity > 0 then
-                table.insert(ctx.hits, { node = n, rect = visible, pos = pos, size = size, radius = style.radius })
+                table.insert(ctx.hits, { node = n, rect = visible, pos = pos, size = size, radius = style.radius,
+                    transform = ctx.transform, screenClip = ctx.screenClip })
             end
         end
-        local clip = p.ClipsDescendants and visible or parentClip
+        -- Like Roblox, ClipsDescendants has no effect inside a rotated subtree.
+        local clip = (p.ClipsDescendants and not ctx.transform) and visible or parentClip
         if ctx.nonempty(clip) then
             for _, c in ipairs(ctx.drawOrder(n)) do drawNode(c, clip, style.opacity, style.tint) end
         end
         if def.DrawAfter then def.DrawAfter(n, style, ctx) end
+        ctx.transform, ctx.screenClip = savedTransform, savedScreenClip
     end
     ctx.drawNode = drawNode
 
@@ -57,6 +67,7 @@ return function(UI, ctx)
         ctx.dirty = false
         table.clear(ctx.hits)
         ctx.z = 0
+        ctx.transform, ctx.screenClip = nil, nil
         for n in pairs(ctx.objects) do
             n._rendered = false
             for _, e in pairs(n._draws) do e.used = false end

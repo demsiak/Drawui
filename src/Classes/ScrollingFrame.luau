@@ -38,7 +38,8 @@ return function(UI, ctx)
             local thumbPos, thumbSize = style.pos + Vector2.new(s.X - thickness - 2, offset), Vector2.new(thickness, height)
             ctx.fillRounded(n, thumbPos, thumbSize, thickness / 2, U.multiply(p.ScrollBarImageColor3, style.tint),
                 style.opacity * (1 - p.ScrollBarImageTransparency), style.clip)
-            table.insert(ctx.hits, { node = n, rect = ctx.intersect(ctx.rect(thumbPos, thumbSize), style.clip), scrollbar = true, height = height })
+            table.insert(ctx.hits, { node = n, rect = ctx.intersect(ctx.rect(thumbPos, thumbSize), style.clip), scrollbar = true, height = height,
+                transform = ctx.transform, screenClip = ctx.screenClip })
         end,
     })
 end

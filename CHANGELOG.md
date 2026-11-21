@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.0
+
+### Library
+- `Rotation` on every GUI object (plus read-only `AbsoluteRotation`): rotates backgrounds, corners, strokes,
+  gradients, shadows and hit areas of the whole subtree. Text and images stay upright (Drawing can't rotate them).
+- `UIShadow` now has Roblox's API: `BlurRadius`, `Offset` / `Spread` (UDim2), `Inset` (inner shadow),
+  `Mode = "Text"` (text drop shadow), `ShowBehindParent`. `Shadow = true` keeps the soft preset, and `Blur` is still
+  accepted in the `Shadow` table. **Breaking:** `UI.new("UIShadow", { Blur = ... })` must use `BlurRadius`.
+
+### VS Code extension
+- Completion and hover for `Rotation`, `AbsoluteRotation` and the new `UIShadow` properties.
+
+### Studio exporter
+- Exports `Rotation` and `UIShadow` (all properties). Adds a note when rotated objects contain text or images.
+
 ## 1.0.0
 
 The first release.

@@ -71,12 +71,19 @@ return function(UI, ctx)
     end
     local function circleSides(r) return clamp(math.ceil(r * 1.5), 12, 64) end
     local function cornerCircle(n, c, r, color, opacity)
+        if ctx.transform then c = ctx.applyTransform(ctx.transform, c) end
         ctx.primitive(n, "Circle", { Position = c, Radius = r, Color = color, Transparency = opacity,
             Filled = true, NumSides = circleSides(r), Thickness = 1 })
     end
     -- Circles cannot be clipped, so the overlapping path is used only when fully visible.
     local function canOverlap(pos, size, opacity, clip)
-        return opacity >= OPAQUE and ctx.fullyInside(ctx.rect(pos, size), clip)
+        if opacity < OPAQUE or not ctx.fullyInside(ctx.rect(pos, size), clip) then return false end
+        local t = ctx.transform
+        if not t then return true end
+        for _, p in ipairs(boxCorners(pos, size)) do
+            if not ctx.contains(ctx.screenClip, ctx.applyTransform(t, p)) then return false end
+        end
+        return true
     end
 
     -- Solid rounded rect.

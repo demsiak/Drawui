@@ -39,11 +39,42 @@ return function(UI, ctx)
     local function contains(r, p) return p.X >= r.x and p.Y >= r.y and p.X < r.r and p.Y < r.b end
     local function fullyInside(a, b) return a.x >= b.x and a.y >= b.y and a.r <= b.r and a.b <= b.b end
     ctx.rect, ctx.intersect, ctx.nonempty, ctx.contains, ctx.fullyInside = rect, intersect, nonempty, contains, fullyInside
+    ctx.HUGE_CLIP = { x = -1e9, y = -1e9, r = 1e9, b = 1e9 }
 
-    -- Filled axis-aligned rectangle.
+    -- Rotation ----------------------------------------------------------------------------------
+    -- Inside a rotated GuiObject everything is laid out and clipped in unrotated (local) space,
+    -- then the final points are mapped to the screen with ctx.transform (a rotation + translation:
+    -- x' = a*x + c*y + tx, y' = b*x + d*y + ty) and clipped to ctx.screenClip, the clip rect of the
+    -- nearest unrotated ancestor. Like Roblox, ClipsDescendants is ignored inside rotated objects.
+    ctx.transform, ctx.screenClip = nil, nil
+    local function apply(t, p) return Vector2.new(t.a * p.X + t.c * p.Y + t.tx, t.b * p.X + t.d * p.Y + t.ty) end
+    local function invert(t, p)
+        local x, y = p.X - t.tx, p.Y - t.ty
+        return Vector2.new(t.a * x + t.b * y, t.c * x + t.d * y)
+    end
+    ctx.applyTransform, ctx.invertTransform = apply, invert
+    -- Parent transform (or nil) followed by a rotation of `angle` radians around `pivot` (local space).
+    function ctx.composeRotation(parent, pivot, angle)
+        local cos, sin = math.cos(angle), math.sin(angle)
+        local t = parent or { a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0 }
+        local rotated = Vector2.new(cos * pivot.X - sin * pivot.Y, sin * pivot.X + cos * pivot.Y)
+        local shift = pivot - rotated
+        return {
+            a = t.a * cos + t.c * sin, b = t.b * cos + t.d * sin,
+            c = -t.a * sin + t.c * cos, d = -t.b * sin + t.d * cos,
+            tx = t.a * shift.X + t.c * shift.Y + t.tx, ty = t.b * shift.X + t.d * shift.Y + t.ty,
+        }
+    end
+
+    -- Filled axis-aligned rectangle (a rotated Quad under a transform).
     function ctx.square(n, pos, size, color, opacity, clip)
         local r = intersect(rect(pos, size), clip)
         if opacity <= 0 or not nonempty(r) then return end
+        if ctx.transform then
+            ctx.convex(n, { Vector2.new(r.x, r.y), Vector2.new(r.r, r.y), Vector2.new(r.r, r.b), Vector2.new(r.x, r.b) },
+                color, opacity, ctx.HUGE_CLIP)
+            return
+        end
         primitive(n, "Square", { Position = Vector2.new(r.x, r.y), Size = Vector2.new(r.r - r.x, r.b - r.y),
             Color = color, Transparency = clamp(opacity, 0, 1), Filled = true, Thickness = 1 })
     end
@@ -51,6 +82,10 @@ return function(UI, ctx)
     -- Line clipped with Liang-Barsky.
     function ctx.line(n, a, b, color, opacity, thickness, clip)
         if opacity <= 0 then return end
+        if ctx.transform then
+            a, b = apply(ctx.transform, a), apply(ctx.transform, b)
+            clip = ctx.screenClip
+        end
         local delta, low, high = b - a, 0, 1
         local function edge(p, q)
             if p == 0 then return q >= 0 end
@@ -148,13 +183,24 @@ return function(UI, ctx)
         end
     end
 
-    -- Draws a filled convex polygon, clipped to `clip`.
+    local function clipTo(pts, clip)
+        local b = bounds(pts)
+        if fullyInside(b, clip) then return pts end
+        if not nonempty(intersect(b, clip)) then return nil end
+        return clipRect(pts, clip)
+    end
+
+    -- Draws a filled convex polygon, clipped to `clip` (local space), then transformed if rotated.
     function ctx.convex(n, pts, color, opacity, clip)
         if opacity <= 0 or #pts < 3 then return end
-        local b = bounds(pts)
-        if not fullyInside(b, clip) then
-            if not nonempty(intersect(b, clip)) then return end
-            pts = clipRect(pts, clip)
+        pts = clipTo(pts, clip)
+        if not pts or #pts < 3 then return end
+        local t = ctx.transform
+        if t then
+            local world = table.create(#pts)
+            for i, p in ipairs(pts) do world[i] = apply(t, p) end
+            pts = clipTo(world, ctx.screenClip)
+            if not pts or #pts < 3 then return end
         end
         pts = dedupe(pts)
         if #pts < 3 or area(pts) < 0.05 then return end

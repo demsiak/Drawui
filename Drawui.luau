@@ -9,7 +9,7 @@ return function(UI, ctx)
     local U = {}
     ctx.U = U
 
-    UI.Version = "1.0.0"
+    UI.Version = "1.1.0"
     UI.Fonts = { UI = 0, System = 1, Plex = 2, Monospace = 3 }
 
     U.ZERO = Vector2.new(0, 0)
@@ -428,11 +428,42 @@ return function(UI, ctx)
     local function contains(r, p) return p.X >= r.x and p.Y >= r.y and p.X < r.r and p.Y < r.b end
     local function fullyInside(a, b) return a.x >= b.x and a.y >= b.y and a.r <= b.r and a.b <= b.b end
     ctx.rect, ctx.intersect, ctx.nonempty, ctx.contains, ctx.fullyInside = rect, intersect, nonempty, contains, fullyInside
+    ctx.HUGE_CLIP = { x = -1e9, y = -1e9, r = 1e9, b = 1e9 }
 
-    -- Filled axis-aligned rectangle.
+    -- Rotation ----------------------------------------------------------------------------------
+    -- Inside a rotated GuiObject everything is laid out and clipped in unrotated (local) space,
+    -- then the final points are mapped to the screen with ctx.transform (a rotation + translation:
+    -- x' = a*x + c*y + tx, y' = b*x + d*y + ty) and clipped to ctx.screenClip, the clip rect of the
+    -- nearest unrotated ancestor. Like Roblox, ClipsDescendants is ignored inside rotated objects.
+    ctx.transform, ctx.screenClip = nil, nil
+    local function apply(t, p) return Vector2.new(t.a * p.X + t.c * p.Y + t.tx, t.b * p.X + t.d * p.Y + t.ty) end
+    local function invert(t, p)
+        local x, y = p.X - t.tx, p.Y - t.ty
+        return Vector2.new(t.a * x + t.b * y, t.c * x + t.d * y)
+    end
+    ctx.applyTransform, ctx.invertTransform = apply, invert
+    -- Parent transform (or nil) followed by a rotation of `angle` radians around `pivot` (local space).
+    function ctx.composeRotation(parent, pivot, angle)
+        local cos, sin = math.cos(angle), math.sin(angle)
+        local t = parent or { a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0 }
+        local rotated = Vector2.new(cos * pivot.X - sin * pivot.Y, sin * pivot.X + cos * pivot.Y)
+        local shift = pivot - rotated
+        return {
+            a = t.a * cos + t.c * sin, b = t.b * cos + t.d * sin,
+            c = -t.a * sin + t.c * cos, d = -t.b * sin + t.d * cos,
+            tx = t.a * shift.X + t.c * shift.Y + t.tx, ty = t.b * shift.X + t.d * shift.Y + t.ty,
+        }
+    end
+
+    -- Filled axis-aligned rectangle (a rotated Quad under a transform).
     function ctx.square(n, pos, size, color, opacity, clip)
         local r = intersect(rect(pos, size), clip)
         if opacity <= 0 or not nonempty(r) then return end
+        if ctx.transform then
+            ctx.convex(n, { Vector2.new(r.x, r.y), Vector2.new(r.r, r.y), Vector2.new(r.r, r.b), Vector2.new(r.x, r.b) },
+                color, opacity, ctx.HUGE_CLIP)
+            return
+        end
         primitive(n, "Square", { Position = Vector2.new(r.x, r.y), Size = Vector2.new(r.r - r.x, r.b - r.y),
             Color = color, Transparency = clamp(opacity, 0, 1), Filled = true, Thickness = 1 })
     end
@@ -440,6 +471,10 @@ return function(UI, ctx)
     -- Line clipped with Liang-Barsky.
     function ctx.line(n, a, b, color, opacity, thickness, clip)
         if opacity <= 0 then return end
+        if ctx.transform then
+            a, b = apply(ctx.transform, a), apply(ctx.transform, b)
+            clip = ctx.screenClip
+        end
         local delta, low, high = b - a, 0, 1
         local function edge(p, q)
             if p == 0 then return q >= 0 end
@@ -537,13 +572,24 @@ return function(UI, ctx)
         end
     end
 
-    -- Draws a filled convex polygon, clipped to `clip`.
+    local function clipTo(pts, clip)
+        local b = bounds(pts)
+        if fullyInside(b, clip) then return pts end
+        if not nonempty(intersect(b, clip)) then return nil end
+        return clipRect(pts, clip)
+    end
+
+    -- Draws a filled convex polygon, clipped to `clip` (local space), then transformed if rotated.
     function ctx.convex(n, pts, color, opacity, clip)
         if opacity <= 0 or #pts < 3 then return end
-        local b = bounds(pts)
-        if not fullyInside(b, clip) then
-            if not nonempty(intersect(b, clip)) then return end
-            pts = clipRect(pts, clip)
+        pts = clipTo(pts, clip)
+        if not pts or #pts < 3 then return end
+        local t = ctx.transform
+        if t then
+            local world = table.create(#pts)
+            for i, p in ipairs(pts) do world[i] = apply(t, p) end
+            pts = clipTo(world, ctx.screenClip)
+            if not pts or #pts < 3 then return end
         end
         pts = dedupe(pts)
         if #pts < 3 or area(pts) < 0.05 then return end
@@ -626,12 +672,19 @@ return function(UI, ctx)
     end
     local function circleSides(r) return clamp(math.ceil(r * 1.5), 12, 64) end
     local function cornerCircle(n, c, r, color, opacity)
+        if ctx.transform then c = ctx.applyTransform(ctx.transform, c) end
         ctx.primitive(n, "Circle", { Position = c, Radius = r, Color = color, Transparency = opacity,
             Filled = true, NumSides = circleSides(r), Thickness = 1 })
     end
     -- Circles cannot be clipped, so the overlapping path is used only when fully visible.
     local function canOverlap(pos, size, opacity, clip)
-        return opacity >= OPAQUE and ctx.fullyInside(ctx.rect(pos, size), clip)
+        if opacity < OPAQUE or not ctx.fullyInside(ctx.rect(pos, size), clip) then return false end
+        local t = ctx.transform
+        if not t then return true end
+        for _, p in ipairs(boxCorners(pos, size)) do
+            if not ctx.contains(ctx.screenClip, ctx.applyTransform(t, p)) then return false end
+        end
+        return true
     end
 
     -- Solid rounded rect.
@@ -926,8 +979,24 @@ return function(UI, ctx)
                     end
                     text = result
                 end
+                local at = Vector2.new(x, yy)
+                local t = ctx.transform
+                if t and text ~= "" then
+                    -- Drawing Text can't rotate: keep the glyphs upright, centred on the rotated line centre.
+                    local half = Vector2.new(measure(text, size, p.Font).X / 2, glyphHeight / 2)
+                    local center = ctx.applyTransform(t, at + half)
+                    at = center - half
+                    if not ctx.contains(ctx.screenClip, center) then text = "" end
+                end
+                local shadow = style.textShadow
+                if shadow and text ~= "" and opacity * shadow.Opacity > 0 then
+                    local sp = at + shadow.Offset
+                    ctx.primitive(n, "Text", { Position = Vector2.new(math.floor(sp.X), math.floor(sp.Y)), Text = text,
+                        Font = fontId(p.Font), Size = size, Color = shadow.Color, Center = false,
+                        Transparency = clamp(opacity * shadow.Opacity, 0, 1), Outline = false, OutlineColor = shadow.Color })
+                end
                 if text ~= "" and opacity > 0 then
-                    ctx.primitive(n, "Text", { Position = Vector2.new(math.floor(x), math.floor(yy)), Text = text,
+                    ctx.primitive(n, "Text", { Position = Vector2.new(math.floor(at.X), math.floor(at.Y)), Text = text,
                         Font = fontId(p.Font), Size = size, Color = color, Center = false,
                         Transparency = clamp(opacity, 0, 1), Outline = outline, OutlineColor = outlineColor })
                 end
@@ -1016,10 +1085,12 @@ return function(UI, ctx)
         return placements, content
     end
 
-    local function layoutNode(n, pos, size, scale)
+    local function layoutNode(n, pos, size, scale, parentRotation)
         n._scale = scale
         ctx.changed(n, "AbsolutePosition", pos)
         ctx.changed(n, "AbsoluteSize", size)
+        local rotation = (parentRotation or 0) + n._p.Rotation
+        ctx.changed(n, "AbsoluteRotation", rotation)
         local tl, br = ctx.padding(n, size, scale)
         local inner = Vector2.new(math.max(0, size.X - tl.X - br.X), math.max(0, size.Y - tl.Y - br.Y))
         local children = ctx.guiChildren(n)
@@ -1037,7 +1108,7 @@ return function(UI, ctx)
         if pre then pre(n, info) end
         for _, c in ipairs(children) do
             local item = placements[c]
-            layoutNode(c, info.origin + item.pos, item.size, c._scale)
+            layoutNode(c, info.origin + item.pos, item.size, c._scale, rotation)
         end
         n._content = info.content + tl + br
     end
@@ -1063,6 +1134,13 @@ return function(UI, ctx)
         table.clear(n._counts)
         local def = n._class
         local pos, size = p.AbsolutePosition, p.AbsoluteSize
+        -- Rotation: draw this subtree in local space through a transform around the object's centre.
+        local savedTransform, savedScreenClip = ctx.transform, ctx.screenClip
+        if p.Rotation % 360 ~= 0 then
+            if not ctx.transform then ctx.screenClip = parentClip end
+            ctx.transform = ctx.composeRotation(ctx.transform, pos + size / 2, math.rad(p.Rotation))
+            parentClip = ctx.HUGE_CLIP
+        end
         local area = ctx.rect(pos, size)
         local visible = ctx.intersect(area, parentClip)
         local style = { pos = pos, size = size, area = area, visible = visible, clip = parentClip,
@@ -1083,14 +1161,17 @@ return function(UI, ctx)
         if ctx.nonempty(visible) then
             if def.Draw then def.Draw(n, style, ctx) end
             if def.Hittable and def.Hittable(n) and p.Interactable and style.opacity > 0 then
-                table.insert(ctx.hits, { node = n, rect = visible, pos = pos, size = size, radius = style.radius })
+                table.insert(ctx.hits, { node = n, rect = visible, pos = pos, size = size, radius = style.radius,
+                    transform = ctx.transform, screenClip = ctx.screenClip })
             end
         end
-        local clip = p.ClipsDescendants and visible or parentClip
+        -- Like Roblox, ClipsDescendants has no effect inside a rotated subtree.
+        local clip = (p.ClipsDescendants and not ctx.transform) and visible or parentClip
         if ctx.nonempty(clip) then
             for _, c in ipairs(ctx.drawOrder(n)) do drawNode(c, clip, style.opacity, style.tint) end
         end
         if def.DrawAfter then def.DrawAfter(n, style, ctx) end
+        ctx.transform, ctx.screenClip = savedTransform, savedScreenClip
     end
     ctx.drawNode = drawNode
 
@@ -1105,6 +1186,7 @@ return function(UI, ctx)
         ctx.dirty = false
         table.clear(ctx.hits)
         ctx.z = 0
+        ctx.transform, ctx.screenClip = nil, nil
         for n in pairs(ctx.objects) do
             n._rendered = false
             for _, e in pairs(n._draws) do e.used = false end
@@ -1167,7 +1249,13 @@ return function(UI, ctx)
 
     -- Topmost hit region under `point`; rounded corners (UICorner) are respected.
     local function inside(h, point)
-        if h.node._dead or not ctx.contains(h.rect, point) then return false end
+        if h.node._dead then return false end
+        if h.transform then
+            -- Rotated object: test in its unrotated local space, limited by the screen clip.
+            if h.screenClip and not ctx.contains(h.screenClip, point) then return false end
+            point = ctx.invertTransform(h.transform, point)
+        end
+        if not ctx.contains(h.rect, point) then return false end
         local r = h.radius or 0
         if r < 1 then return true end
         local p, s = h.pos, h.size
@@ -1524,9 +1612,11 @@ return function(UI, ctx)
             p.BorderColor3 = Color3.fromRGB(64, 69, 85); p.BorderSizePixel = 0
             p.ZIndex = 1; p.LayoutOrder = 0; p.ClipsDescendants = false; p.AutomaticSize = "None"
             p.AbsolutePosition = U.ZERO; p.AbsoluteSize = U.ZERO
+            p.Rotation = 0; p.AbsoluteRotation = 0
         end,
         Hittable = function(n) return n._p.Active end,
     })
+    ctx.readonly.AbsoluteRotation = true
 
     UI.RegisterClass("GuiObject", { Base = "GuiBase", Abstract = true })
 
@@ -1577,7 +1667,15 @@ return function(UI, ctx)
             color, alpha = U.multiply(color, c), alpha * a
         end
         if alpha <= 0 then return end
-        ctx.primitive(n, "Image", { Data = p.Image, Position = style.pos, Size = style.size, Rounding = style.radius,
+        local at = style.pos
+        if ctx.transform then
+            -- Drawing Image can't rotate: draw it upright around the rotated centre.
+            local half = style.size / 2
+            local center = ctx.applyTransform(ctx.transform, style.pos + half)
+            if not ctx.fullyInside(ctx.rect(center - half, style.size), ctx.screenClip) then return end
+            at = center - half
+        end
+        ctx.primitive(n, "Image", { Data = p.Image, Position = at, Size = style.size, Rounding = style.radius,
             Color = color, Transparency = U.clamp(alpha, 0, 1) })
     end
 end
@@ -1713,7 +1811,8 @@ return function(UI, ctx)
             local thumbPos, thumbSize = style.pos + Vector2.new(s.X - thickness - 2, offset), Vector2.new(thickness, height)
             ctx.fillRounded(n, thumbPos, thumbSize, thickness / 2, U.multiply(p.ScrollBarImageColor3, style.tint),
                 style.opacity * (1 - p.ScrollBarImageTransparency), style.clip)
-            table.insert(ctx.hits, { node = n, rect = ctx.intersect(ctx.rect(thumbPos, thumbSize), style.clip), scrollbar = true, height = height })
+            table.insert(ctx.hits, { node = n, rect = ctx.intersect(ctx.rect(thumbPos, thumbSize), style.clip), scrollbar = true, height = height,
+                transform = ctx.transform, screenClip = ctx.screenClip })
         end,
     })
 end
@@ -1810,33 +1909,96 @@ end
 end)()(UI, ctx)
 -- ==== Modifiers/UIShadow.luau ====
 ;(function()
--- Modifiers/UIShadow (library extension, not a Roblox class): soft drop shadow behind the parent.
---   Color, Transparency (of the darkest part), Offset (Vector2 px), Blur (px), Spread (px), Enabled
--- Built from stacked translucent rounded rects whose combined opacity equals 1 - Transparency.
+-- Modifiers/UIShadow: Roblox's UIShadow.
+--   Color, Transparency, Enabled
+--   BlurRadius        UDim (scale relative to the parent's shorter side); a number means pixels
+--   Offset, Spread    UDim2 (relative to the parent's size); a Vector2 / number means pixels
+--   Inset             true = inner shadow drawn inside the parent's shape
+--   Mode              "Shape" (shadow of the box) or "Text" (drop shadow under the parent's text)
+--   ShowBehindParent  false draws a Shape shadow over the parent's background
+-- Blur is built from stacked translucent rounded rects whose combined opacity is 1 - Transparency.
+-- Drawing text can't blur, so Text-mode shadows ignore BlurRadius.
 return function(UI, ctx)
     local U = ctx.U
+
+    local function toUDim2(v)
+        if type(v) == "number" then return UDim2.fromOffset(v, v) end
+        if typeof(v) == "Vector2" then return UDim2.fromOffset(v.X, v.Y) end
+        return v
+    end
+
+    local function metrics(m, n, style)
+        local p, s, scale = m._p, style.size, n._scale
+        return math.max(0, U.udim(p.BlurRadius, math.min(s.X, s.Y), scale)), U.vec(p.Offset, s, scale), U.vec(p.Spread, s, scale)
+    end
+    local function layersFor(blur) return blur < 1 and 1 or U.clamp(math.ceil(blur / 2.5), 2, 10) end
+    local function perLayer(total, layers) return 1 - (1 - math.min(total, 0.999)) ^ (1 / layers) end
+
+    local function outer(m, n, style)
+        local p = m._p
+        local total = style.opacity * (1 - p.Transparency)
+        if total <= 0 then return end
+        local blur, offset, spread = metrics(m, n, style)
+        local pos, size = style.pos + offset - spread, style.size + spread * 2
+        if size.X <= 0 or size.Y <= 0 then return end
+        local radius = style.radius > 0 and math.max(0, style.radius + math.max(spread.X, spread.Y)) or 0
+        local color = U.multiply(p.Color, style.tint)
+        local layers = layersFor(blur)
+        local per = layers == 1 and total or perLayer(total, layers)
+        -- Layers run from blur/2 inside the edge to blur/2 outside it, bunched towards the outside.
+        for i = layers, 1, -1 do
+            local f = layers == 1 and 0.5 or (i - 1) / (layers - 1)
+            local grow = blur * (f * f - 0.5)
+            local s = size + Vector2.new(grow * 2, grow * 2)
+            if s.X > 0 and s.Y > 0 then
+                ctx.fillRounded(n, pos - Vector2.new(grow, grow), s, math.max(0, radius + grow), color, per, style.clip)
+            end
+        end
+    end
+
+    local function inner(m, n, style)
+        local p = m._p
+        local total = style.opacity * (1 - p.Transparency)
+        if total <= 0 then return end
+        local blur, offset, spread = metrics(m, n, style)
+        local clip = ctx.intersect(style.area, style.clip)
+        if not ctx.nonempty(clip) then return end
+        local far = math.max(style.size.X, style.size.Y) + math.abs(offset.X) + math.abs(offset.Y) + blur
+        local color = U.multiply(p.Color, style.tint)
+        local layers = layersFor(blur)
+        local per = layers == 1 and total or perLayer(total, layers)
+        local base = math.max(spread.X, spread.Y)
+        -- Everything outside the shifted, shrunk inner box is in shadow; each layer shrinks further.
+        for i = 1, layers do
+            local f = layers == 1 and 0 or (i - 1) / (layers - 1)
+            ctx.ring(n, style.pos + offset, style.size, style.radius, -(base + blur * f * f), far, color, per, clip, false)
+        end
+    end
+
+    local function mode(m) return U.enumName(m._p.Mode) end
+
     UI.RegisterClass("UIShadow", {
         Base = "UIComponent",
         Defaults = function(p)
-            p.Color = U.BLACK; p.Transparency = 0.5; p.Offset = Vector2.new(0, 6)
-            p.Blur = 18; p.Spread = 0; p.Enabled = true
+            p.Color = U.BLACK; p.Transparency = 0; p.Enabled = true
+            p.BlurRadius = UDim.new(0, 0); p.Offset = UDim2.new(); p.Spread = UDim2.new()
+            p.Inset = false; p.Mode = "Shape"; p.ShowBehindParent = true; p.ZIndex = -1
+        end,
+        Coerce = { BlurRadius = U.toUDim, Offset = toUDim2, Spread = toUDim2 },
+        Style = function(m, n, style)
+            if mode(m) ~= "Text" then return end
+            local p = m._p
+            style.textShadow = { Color = U.multiply(p.Color, style.tint), Opacity = 1 - p.Transparency,
+                Offset = U.vec(p.Offset, style.size, n._scale) }
         end,
         Underlay = function(m, n, style)
             local p = m._p
-            local total = style.opacity * (1 - p.Transparency)
-            if total <= 0 then return end
-            local layers = U.clamp(math.ceil(p.Blur / 2.5), 1, 10)
-            local per = 1 - (1 - math.min(total, 0.999)) ^ (1 / layers)
-            local scale = n._scale
-            local color = U.multiply(p.Color, style.tint)
-            local base = style.pos + p.Offset * scale
-            for i = layers, 1, -1 do
-                -- Quadratic spacing: layers bunch up near the edge, so the falloff looks soft, not stepped.
-                local f = (i - 1) / layers
-                local grow = (p.Spread + p.Blur * f * f) * scale
-                ctx.fillRounded(n, base - Vector2.new(grow, grow), style.size + Vector2.new(grow * 2, grow * 2),
-                    style.radius + grow, color, per, style.clip)
-            end
+            if mode(m) == "Shape" and not p.Inset and p.ShowBehindParent then outer(m, n, style) end
+        end,
+        Overlay = function(m, n, style)
+            local p = m._p
+            if mode(m) ~= "Shape" then return end
+            if p.Inset then inner(m, n, style) elseif not p.ShowBehindParent then outer(m, n, style) end
         end,
     })
 end
@@ -2134,8 +2296,16 @@ return function(UI, ctx)
         else props = { Color = v } end
         make("UIGradient", node, props)
     end)
+    -- Shadow = true uses a soft preset; a table is passed through (Blur is accepted for BlurRadius).
     Builder.RegisterSugar("Shadow", function(node, v)
-        make("UIShadow", node, v == true and {} or table.clone(v))
+        local props
+        if v == true then
+            props = { BlurRadius = 18, Offset = UDim2.fromOffset(0, 6), Transparency = 0.5 }
+        else
+            props = table.clone(v)
+            if props.Blur ~= nil then props.BlurRadius = props.BlurRadius or props.Blur; props.Blur = nil end
+        end
+        make("UIShadow", node, props)
     end)
     Builder.RegisterSugar("Padding", function(node, v)
         local props = {}

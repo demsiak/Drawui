@@ -128,8 +128,16 @@ return function(UI, ctx)
         else props = { Color = v } end
         make("UIGradient", node, props)
     end)
+    -- Shadow = true uses a soft preset; a table is passed through (Blur is accepted for BlurRadius).
     Builder.RegisterSugar("Shadow", function(node, v)
-        make("UIShadow", node, v == true and {} or table.clone(v))
+        local props
+        if v == true then
+            props = { BlurRadius = 18, Offset = UDim2.fromOffset(0, 6), Transparency = 0.5 }
+        else
+            props = table.clone(v)
+            if props.Blur ~= nil then props.BlurRadius = props.BlurRadius or props.Blur; props.Blur = nil end
+        end
+        make("UIShadow", node, props)
     end)
     Builder.RegisterSugar("Padding", function(node, v)
         local props = {}

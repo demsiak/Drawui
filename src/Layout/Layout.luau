@@ -71,10 +71,12 @@ return function(UI, ctx)
         return placements, content
     end
 
-    local function layoutNode(n, pos, size, scale)
+    local function layoutNode(n, pos, size, scale, parentRotation)
         n._scale = scale
         ctx.changed(n, "AbsolutePosition", pos)
         ctx.changed(n, "AbsoluteSize", size)
+        local rotation = (parentRotation or 0) + n._p.Rotation
+        ctx.changed(n, "AbsoluteRotation", rotation)
         local tl, br = ctx.padding(n, size, scale)
         local inner = Vector2.new(math.max(0, size.X - tl.X - br.X), math.max(0, size.Y - tl.Y - br.Y))
         local children = ctx.guiChildren(n)
@@ -92,7 +94,7 @@ return function(UI, ctx)
         if pre then pre(n, info) end
         for _, c in ipairs(children) do
             local item = placements[c]
-            layoutNode(c, info.origin + item.pos, item.size, c._scale)
+            layoutNode(c, info.origin + item.pos, item.size, c._scale, rotation)
         end
         n._content = info.content + tl + br
     end
