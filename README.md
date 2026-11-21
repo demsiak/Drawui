@@ -41,6 +41,7 @@ New "Frame" {
 - [Tweens and dragging](#tweens-and-dragging)
 - [Object methods](#object-methods)
 - [Library functions](#library-functions)
+- [Images](#images)
 - [Re-running scripts and cleanup](#re-running-scripts-and-cleanup)
 - [Custom classes and sugar](#custom-classes-and-sugar)
 - [Limitations](#limitations)
@@ -184,7 +185,7 @@ because `Drawing` can't rotate them; they move with the rotation instead. As in 
 | `TextLabel`, `TextButton`, `TextBox` | `Text`, `TextColor3`, `TextSize`, `Font`, `TextTransparency`, `TextXAlignment`, `TextYAlignment`, `TextWrapped`, `TextScaled`, `LineHeight`, `TextStrokeTransparency`, `TextStrokeColor3`, `TextBounds` (read-only) |
 | `TextButton`, `ImageButton` | `AutoButtonColor` (hover / press shading) |
 | `TextBox` | `PlaceholderText`, `PlaceholderColor3`, `ClearTextOnFocus`, `MultiLine`, `MaxLength`, `TextEditable`, `CursorPosition` |
-| `ImageLabel`, `ImageButton` | `Image` (passed to Drawing `Image.Data`), `ImageColor3`, `ImageTransparency` |
+| `ImageLabel`, `ImageButton` | `Image`, `ImageColor3`, `ImageTransparency`. See [Images](#images) |
 | `ScrollingFrame` | `CanvasSize`, `CanvasPosition`, `AutomaticCanvasSize`, `ScrollingEnabled`, `ScrollingDirection`, `ScrollBarThickness`, `ScrollBarImageColor3`, `ScrollBarImageTransparency` |
 
 `Font` takes `UI.Fonts.UI`, `UI.Fonts.System`, `UI.Fonts.Plex` or `UI.Fonts.Monospace` (`Drawing.Fonts`).
@@ -304,6 +305,28 @@ TextBox only: `CaptureFocus`, `ReleaseFocus`, `IsFocused`.
 | `UI.Signal()` | a signal with `Connect`, `Once`, `Wait`, `Fire` |
 | `UI.RegisterClass`, `UI.RegisterSugar`, `UI.GetClass`, `UI.GetClasses` | extending the library |
 | `UI.Fonts`, `UI.Version` | constants |
+
+## Images
+
+`Image` accepts:
+
+- `rbxassetid://123` or a roblox.com asset link: downloaded from `assetdelivery.roblox.com` in the background.
+  Roblox now requires a login for that endpoint, so this only works if your executor sends authenticated requests.
+- an `https://...` URL to a PNG or JPEG: downloaded in the background and cached.
+- raw image bytes, e.g. `readfile("logo.png")`: used as they are.
+
+Images embedded with `UI.Images.Register` are used first. The Studio exporter does this for you: it reads
+the pixels in Studio and puts them in the script, so Roblox image assets show up without any download.
+
+```lua
+UI.Images.Register({
+    ["rbxassetid://123"] = readfile("note.png"),          -- PNG / JPEG bytes
+    ["logo"] = { 64, 64, "...base64 pixels..." },           -- what the exporter writes
+})
+UI.Images.Mode = "url"            -- pass URLs straight to Image.Data (executors that load URLs themselves)
+UI.Images.Loader = function(url) return request({ Url = url }).Body end -- custom downloader
+UI.Images.Preload({ "https://example.com/a.png" })
+```
 
 ## Re-running scripts and cleanup
 

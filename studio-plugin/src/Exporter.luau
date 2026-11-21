@@ -141,7 +141,9 @@ end
 
 -- Properties that have no visible effect in the given state are not written.
 local HIDDEN = {
-	BorderColor3 = function(i) return i.BorderSizePixel == 0 end,
+	-- The border fades with the background, so it is invisible on transparent objects.
+	BorderColor3 = function(i) return i.BorderSizePixel == 0 or i.BackgroundTransparency >= 1 end,
+	BorderSizePixel = function(i) return i.BackgroundTransparency >= 1 end,
 	BackgroundColor3 = function(i) return i.BackgroundTransparency >= 1 end,
 	TextStrokeColor3 = function(i) return i.TextStrokeTransparency >= 1 end,
 	PlaceholderColor3 = function(i) return i.PlaceholderText == "" end,
@@ -182,7 +184,7 @@ end
 local Writer = {}
 Writer.__index = Writer
 local function newWriter(options)
-	return setmetatable({ lines = {}, warnings = {}, options = options or {} }, Writer)
+	return setmetatable({ lines = {}, warnings = {}, images = {}, imageOrder = {}, options = options or {} }, Writer)
 end
 function Writer:line(depth, text) table.insert(self.lines, string.rep("\t", depth) .. text) end
 function Writer:warn(inst, text) table.insert(self.warnings, inst:GetFullName() .. ": " .. text) end
@@ -301,7 +303,15 @@ function Writer:object(inst, depth, extra)
 		end
 	end
 	if (inst:IsA("ImageLabel") or inst:IsA("ImageButton")) and inst.Image ~= "" then
-		self:warn(inst, "Image " .. inst.Image .. " is passed to Drawing Image.Data as-is; most executors need image data or a URL")
+		-- Remember the largest on-screen size each image is used at (decides the embedded resolution).
+		local entry = self.images[inst.Image]
+		if not entry then
+			entry = { side = 0, transparency = 1, user = inst }
+			self.images[inst.Image] = entry
+			table.insert(self.imageOrder, inst.Image)
+		end
+		entry.side = math.max(entry.side, inst.AbsoluteSize.X, inst.AbsoluteSize.Y)
+		entry.transparency = math.min(entry.transparency, inst.ImageTransparency)
 	end
 	if self.options.buttonStubs and (inst:IsA("TextButton") or inst:IsA("ImageButton")) then
 		table.insert(entries, "Activated = function()\n" .. string.rep("\t", depth + 2) .. "print(" .. str(inst.Name .. " clicked") .. ")\n" .. string.rep("\t", depth + 1) .. "end")
@@ -381,14 +391,50 @@ function Exporter.Export(roots, options)
 		table.insert(body, table.concat(w.lines, "\n"))
 	end
 
+	-- Images: embed pixels (options.encodeImage, provided by the plugin) or leave them to runtime download.
+	local imageBlock = {}
+	for _, source in w.imageOrder do
+		local entry = w.images[source]
+		if options.encodeImage then
+			-- Embedded at the size it is shown (min 16, max 256 px; very faint images max 128 px).
+			local cap = entry.transparency >= 0.85 and 128 or 256
+			local side = entry.side > 0 and math.clamp(math.ceil(entry.side), 16, cap) or cap
+			local ok, width, height, lines = pcall(options.encodeImage, source, side)
+			if ok then
+				table.insert(imageBlock, "\t[" .. str(source) .. "] = { " .. width .. ", " .. height .. ", [[")
+				for _, l in lines do table.insert(imageBlock, l) end
+				table.insert(imageBlock, "]] },")
+			else
+				w:warn(entry.user, "image " .. source .. " could not be embedded (" .. tostring(width) .. "); Drawui will try to download it")
+			end
+		else
+			w:warn(entry.user, "image " .. source .. " is not embedded; Drawui will try to download it (Roblox assets usually need login)")
+		end
+	end
+
 	local out = {}
 	table.insert(out, "-- Exported from Roblox Studio with the Drawui exporter.")
 	if #w.warnings > 0 then
+		-- Identical notes (e.g. many siblings with the same name) are listed once with a count.
+		local order, counts = {}, {}
+		for _, text in w.warnings do
+			if not counts[text] then counts[text] = 0; table.insert(order, text) end
+			counts[text] += 1
+		end
 		table.insert(out, "-- Notes (not exported or drawn differently):")
-		for _, text in w.warnings do table.insert(out, "--   " .. text) end
+		for _, text in order do
+			table.insert(out, "--   " .. text .. (counts[text] > 1 and (" (x" .. counts[text] .. ")") or ""))
+		end
 	end
 	table.insert(out, Exporter.Loaders[options.loader or "github"] or Exporter.Loaders.github)
 	table.insert(out, "local New, Children = UI.New, UI.Children")
+	if #imageBlock > 0 then
+		table.insert(out, "")
+		table.insert(out, "-- Images embedded by the exporter (width, height, compressed RGBA pixels).")
+		table.insert(out, "UI.Images.Register({")
+		table.insert(out, table.concat(imageBlock, "\n"))
+		table.insert(out, "})")
+	end
 	table.insert(out, "")
 	table.insert(out, table.concat(body, "\n\n"))
 	return table.concat(out, "\n") .. "\n", w.warnings

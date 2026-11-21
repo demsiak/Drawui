@@ -1,5 +1,5 @@
 -- Drawui Exporter: Roblox Studio plugin that exports the selected GUI as a Drawui script.
--- `Exporter` and `ICON` are provided by the bundle (see build.ps1).
+-- `Exporter`, `ImageEmbed` and `ICON` are provided by the bundle (see build.ps1).
 local Selection = game:GetService("Selection")
 local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -14,6 +14,7 @@ local LOADERS = {
 local options = {
 	loader = plugin:GetSetting("loader") or "github",
 	buttonStubs = plugin:GetSetting("buttonStubs") == true,
+	embedImages = plugin:GetSetting("embedImages") ~= false,
 }
 local function save(key, value)
 	options[key] = value
@@ -48,7 +49,8 @@ local function export()
 	if #roots == 0 then
 		return false, "Select a ScreenGui or GUI object (or put a ScreenGui in StarterGui)."
 	end
-	local source, warnings = Exporter.Export(roots, { loader = options.loader, buttonStubs = options.buttonStubs })
+	local source, warnings = Exporter.Export(roots, { loader = options.loader, buttonStubs = options.buttonStubs,
+		encodeImage = options.embedImages and ImageEmbed.Encode or nil })
 
 	local recording = ChangeHistoryService:TryBeginRecording("Drawui export")
 	local folder = ServerStorage:FindFirstChild("DrawuiExports")
@@ -173,6 +175,7 @@ local function toggle(order, text, key)
 	refresh()
 end
 toggle(5, "Add Activated stubs to buttons", "buttonStubs")
+toggle(5, "Embed images in the script (recommended)", "embedImages")
 
 local exportButton = new("TextButton", { LayoutOrder = 6, Text = "Export selection", Font = Enum.Font.GothamBold, TextSize = 14,
 	Size = UDim2.new(1, 0, 0, 36), Parent = root }, { corner(6) })

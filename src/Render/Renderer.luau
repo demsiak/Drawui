@@ -34,9 +34,10 @@ return function(UI, ctx)
         if bgOpacity > 0 and ctx.nonempty(visible) then
             ctx.fillShape(n, pos, size, style.radius, U.multiply(style.background, style.tint), bgOpacity, parentClip, style.gradient)
         end
-        if p.BorderSizePixel > 0 then
+        -- Like Roblox, the border fades together with the background.
+        if p.BorderSizePixel > 0 and bgOpacity > 0 then
             ctx.ring(n, pos, size, style.radius, 0, p.BorderSizePixel * n._scale,
-                U.multiply(p.BorderColor3, style.tint), style.opacity, parentClip, false)
+                U.multiply(p.BorderColor3, style.tint), bgOpacity, parentClip, false)
         end
         ctx.eachModifier(n, "Overlay", function(m, fn) fn(m, n, style, ctx) end)
         if ctx.nonempty(visible) then

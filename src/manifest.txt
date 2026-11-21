@@ -8,6 +8,7 @@ Core/Object.luau
 Render/Pool.luau
 Render/Shapes.luau
 Render/Text.luau
+Render/Images.luau
 Layout/Layout.luau
 Render/Renderer.luau
 Input/Input.luau

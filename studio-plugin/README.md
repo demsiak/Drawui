@@ -28,6 +28,7 @@ Panel options:
 |---|---|
 | Load Drawui from | `GitHub (latest)`, `GitHub (v1.0.0)` (pinned) or `readfile` (local `Drawui.luau`) |
 | Add Activated stubs to buttons | adds `Activated = function() print(...) end` to every button |
+| Embed images in the script | reads each image's pixels in Studio (scaled to the size it is shown at, max 256 px) and embeds them, so `rbxassetid` images work in executors without downloads. On by default |
 
 ## What gets exported
 
@@ -45,7 +46,7 @@ Anything Drawui can't reproduce is listed in a comment at the top of the script:
 - unsupported properties (`RichText`, `TextTruncate`, `ScaleType`, `ImageRectSize`, ...)
 - a second modifier of the same class on one object
 - rotated objects that contain text or images (Drawui keeps those upright)
-- `rbxassetid://` images, which most executors can't load through `Drawing` Image
+- images that could not be embedded (with "Embed images" off, Drawui tries to download them, which Roblox usually blocks)
 
 Scripts and folders inside the UI are ignored.
 

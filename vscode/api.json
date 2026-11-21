@@ -282,6 +282,7 @@
     "GetClass": { "snippet": "GetClass(\"${1:Frame}\")", "doc": "Class definition table." },
     "GetClasses": { "snippet": "GetClasses()", "doc": "Names of all creatable classes." },
     "Signal": { "snippet": "Signal()", "doc": "New signal with Connect / Once / Wait / Fire." },
+    "Images": { "doc": "Image loading: Register({ [source] = png bytes or { w, h, data } }), Mode (\"bytes\" / \"url\"), Loader(url), Preload(list), Clear()." },
     "Fonts": { "doc": "{ UI = 0, System = 1, Plex = 2, Monospace = 3 }" },
     "Version": { "doc": "Library version string." },
     "Builder": { "doc": "Builder namespace (New, Children, Ref, OnEvent, OnChange, Hydrate, RegisterSugar)." }

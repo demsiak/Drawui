@@ -8,12 +8,15 @@
 - `UIShadow` now has Roblox's API: `BlurRadius`, `Offset` / `Spread` (UDim2), `Inset` (inner shadow),
   `Mode = "Text"` (text drop shadow), `ShowBehindParent`. `Shadow = true` keeps the soft preset, and `Blur` is still
   accepted in the `Shadow` table. **Breaking:** `UI.new("UIShadow", { Blur = ... })` must use `BlurRadius`.
+- Images: `rbxassetid` / URL images are downloaded in the background, and `UI.Images.Register` embeds
+  pixels or PNG bytes (used by the Studio exporter). Borders now fade with `BackgroundTransparency`, like Roblox.
 
 ### VS Code extension
 - Completion and hover for `Rotation`, `AbsoluteRotation` and the new `UIShadow` properties.
 
 ### Studio exporter
 - Exports `Rotation` and `UIShadow` (all properties). Adds a note when rotated objects contain text or images.
+- Embeds images (pixels read in Studio), skips invisible borders and groups repeated notes.
 
 ## 1.0.0
 

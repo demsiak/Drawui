@@ -67,6 +67,8 @@ return function(UI, ctx)
     function ctx.drawImage(n, style)
         local p = n._p
         if p.Image == "" or not ctx.fullyInside(style.area, style.clip) then return end
+        local data = ctx.imageData(p.Image)
+        if not data then return end
         local color, alpha = U.multiply(p.ImageColor3, style.tint), style.opacity * (1 - p.ImageTransparency)
         if style.gradient and style.gradient.ApplyToText then
             local c, a = ctx.gradientAt(style.gradient, 0.5)
@@ -81,7 +83,7 @@ return function(UI, ctx)
             if not ctx.fullyInside(ctx.rect(center - half, style.size), ctx.screenClip) then return end
             at = center - half
         end
-        ctx.primitive(n, "Image", { Data = p.Image, Position = at, Size = style.size, Rounding = style.radius,
+        ctx.primitive(n, "Image", { Data = data, Position = at, Size = style.size, Rounding = style.radius,
             Color = color, Transparency = U.clamp(alpha, 0, 1) })
     end
 end

@@ -14,6 +14,9 @@ local ICON = "$icon"
 local Exporter = (function()
 $(& $read 'src\Exporter.luau')
 end)()
+local ImageEmbed = (function()
+$(& $read 'src\ImageEmbed.luau')
+end)()
 $(& $read 'src\Plugin.server.luau')
 "@
 $cdata = $source.Replace(']]>', ']]]]><![CDATA[>')
