@@ -1,0 +1,19 @@
+{
+  "name": "drawui",
+  "displayName": "Drawui",
+  "description": "Completion, hover docs and snippets for the Drawui Potassium UI library.",
+  "version": "0.1.0",
+  "publisher": "demsiak",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/demsiak/Drawui" },
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Snippets", "Programming Languages"],
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:lua", "onLanguage:luau"],
+  "contributes": {
+    "snippets": [
+      { "language": "lua", "path": "./snippets.json" },
+      { "language": "luau", "path": "./snippets.json" }
+    ]
+  }
+}

@@ -92,3 +92,7 @@ The hooks are listed at the top of `src/Core/Registry.luau`.
 .\test.ps1 -LuauPath C:\path\to\luau.exe
 ```
 
+
+## VS Code extension
+
+`vscode/` contains a completion + hover + snippets extension for Drawui (see `vscode/README.md`).

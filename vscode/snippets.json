@@ -1,0 +1,122 @@
+{
+  "Drawui: load": {
+    "prefix": ["drawui", "dui-load"],
+    "body": ["local UI = loadstring(readfile(\"Drawui.luau\"))()", "local New, Children = UI.New, UI.Children", "$0"],
+    "description": "Load Drawui from the workspace folder"
+  },
+  "Drawui: load from GitHub": {
+    "prefix": "dui-load-github",
+    "body": ["local UI = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/demsiak/Drawui/main/Drawui.luau\"))()", "local New, Children = UI.New, UI.Children", "$0"],
+    "description": "Load Drawui over HTTP"
+  },
+  "Drawui: window": {
+    "prefix": "dui-window",
+    "body": [
+      "local gui = New \"ScreenGui\" {}",
+      "",
+      "local ${1:window} = New \"Frame\" {",
+      "\tParent = gui,",
+      "\tAnchorPoint = Vector2.new(0.5, 0.5),",
+      "\tPosition = UDim2.fromScale(0.5, 0.5),",
+      "\tSize = UDim2.fromOffset(${2:320}, ${3:220}),",
+      "\tBackgroundColor3 = Color3.fromRGB(20, 22, 30),",
+      "\tCorner = 12,",
+      "\tStroke = Color3.fromRGB(50, 55, 70),",
+      "\tShadow = true,",
+      "\tPadding = 16,",
+      "\tList = 10,",
+      "\t[Children] = {",
+      "\t\t$0",
+      "\t},",
+      "}",
+      "",
+      "UI.MakeDraggable(${1:window})"
+    ],
+    "description": "Draggable window with corner, stroke, shadow and list layout"
+  },
+  "Drawui: button": {
+    "prefix": "dui-button",
+    "body": [
+      "New \"TextButton\" {",
+      "\tText = \"${1:Button}\",",
+      "\tSize = UDim2.new(1, 0, 0, ${2:36}),",
+      "\tCorner = 8,",
+      "\tActivated = function()",
+      "\t\t$0",
+      "\tend,",
+      "},"
+    ],
+    "description": "TextButton with Activated handler"
+  },
+  "Drawui: label": {
+    "prefix": "dui-label",
+    "body": [
+      "New \"TextLabel\" {",
+      "\tText = \"${1:Label}\",",
+      "\tSize = UDim2.new(1, 0, 0, ${2:20}),",
+      "\tTextXAlignment = \"Left\",",
+      "},"
+    ],
+    "description": "TextLabel"
+  },
+  "Drawui: textbox": {
+    "prefix": "dui-textbox",
+    "body": [
+      "New \"TextBox\" {",
+      "\tPlaceholderText = \"${1:Type here...}\",",
+      "\tSize = UDim2.new(1, 0, 0, 36),",
+      "\tTextXAlignment = \"Left\",",
+      "\tCorner = 8,",
+      "\tPadding = { Horizontal = 10 },",
+      "\tFocusLost = function(enter)",
+      "\t\t$0",
+      "\tend,",
+      "},"
+    ],
+    "description": "TextBox with FocusLost handler"
+  },
+  "Drawui: toggle": {
+    "prefix": "dui-toggle",
+    "body": [
+      "local ${1:enabled} = false",
+      "local knob",
+      "New \"TextButton\" {",
+      "\tText = \"\",",
+      "\tSize = UDim2.fromOffset(48, 28),",
+      "\tBackgroundColor3 = Color3.fromRGB(49, 57, 75),",
+      "\tCorner = UDim.new(0.5, 0),",
+      "\t[Children] = {",
+      "\t\tNew \"Frame\" {",
+      "\t\t\tPosition = UDim2.fromOffset(4, 4),",
+      "\t\t\tSize = UDim2.fromOffset(20, 20),",
+      "\t\t\tBackgroundColor3 = Color3.new(1, 1, 1),",
+      "\t\t\tCorner = UDim.new(0.5, 0),",
+      "\t\t\t[UI.Ref] = function(k) knob = k end,",
+      "\t\t},",
+      "\t},",
+      "\tActivated = function()",
+      "\t\t${1:enabled} = not ${1:enabled}",
+      "\t\tUI.Tween(knob, TweenInfo.new(0.15), { Position = UDim2.fromOffset(${1:enabled} and 24 or 4, 4) })",
+      "\t\t$0",
+      "\tend,",
+      "},"
+    ],
+    "description": "Animated toggle switch"
+  },
+  "Drawui: scrolling list": {
+    "prefix": "dui-scroll",
+    "body": [
+      "New \"ScrollingFrame\" {",
+      "\tSize = UDim2.new(1, 0, 0, ${1:200}),",
+      "\tBackgroundColor3 = Color3.fromRGB(24, 28, 39),",
+      "\tCorner = 8,",
+      "\tPadding = 8,",
+      "\tList = 6,",
+      "\t[Children] = {",
+      "\t\t$0",
+      "\t},",
+      "},"
+    ],
+    "description": "ScrollingFrame with padding and list layout"
+  }
+}

@@ -1,0 +1,305 @@
+{
+  "enums": {
+    "AutomaticSize": ["None", "X", "Y", "XY"],
+    "TextXAlignment": ["Left", "Center", "Right"],
+    "TextYAlignment": ["Top", "Center", "Bottom"],
+    "HorizontalAlignment": ["Left", "Center", "Right"],
+    "VerticalAlignment": ["Top", "Center", "Bottom"],
+    "FillDirection": ["Horizontal", "Vertical"],
+    "SortOrder": ["LayoutOrder", "Name"],
+    "ScrollingDirection": ["X", "Y", "XY"],
+    "ApplyStrokeMode": ["Contextual", "Border"],
+    "BorderStrokePosition": ["Outer", "Center", "Inner"],
+    "LineJoinMode": ["Round", "Miter", "Bevel"],
+    "DominantAxis": ["Width", "Height"],
+    "AspectType": ["FitWithinMaxSize", "ScaleWithParentSize"]
+  },
+  "classes": {
+    "Instance": {
+      "abstract": true,
+      "props": {
+        "Name": { "type": "string", "default": "\"Name\"", "doc": "Name used by FindFirstChild and `parent.Name` lookup." }
+      }
+    },
+    "GuiBase": {
+      "base": "Instance", "abstract": true, "gui": true,
+      "props": {
+        "Visible": { "type": "boolean", "default": "true", "doc": "Hidden objects and their descendants are not drawn or clickable." },
+        "Active": { "type": "boolean", "default": "false", "doc": "Receives input (hit test) even when not a button." },
+        "Interactable": { "type": "boolean", "default": "true", "doc": "false disables clicks and hover." },
+        "Position": { "type": "UDim2", "default": "UDim2.fromOffset(0, 0)", "doc": "Position inside the parent (ignored under a UIListLayout / UIGridLayout)." },
+        "Size": { "type": "UDim2", "default": "UDim2.fromOffset(100, 100)", "doc": "Size relative to the parent." },
+        "AnchorPoint": { "type": "Vector2", "default": "Vector2.new(0, 0)", "doc": "Origin of Position: (0.5, 0.5) centres the object." },
+        "BackgroundColor3": { "type": "Color3", "default": "Color3.fromRGB(30, 33, 43)", "doc": "Background colour. Multiplied by UIGradient." },
+        "BackgroundTransparency": { "type": "number", "default": "0", "doc": "0 = opaque, 1 = invisible." },
+        "BorderColor3": { "type": "Color3", "default": "Color3.fromRGB(64, 69, 85)" },
+        "BorderSizePixel": { "type": "number", "default": "0", "doc": "Border drawn outside the box. Prefer UIStroke." },
+        "ZIndex": { "type": "number", "default": "1", "doc": "Draw order among siblings." },
+        "LayoutOrder": { "type": "number", "default": "0", "doc": "Order inside UIListLayout / UIGridLayout." },
+        "ClipsDescendants": { "type": "boolean", "default": "false", "doc": "Clip children to this object's box." },
+        "AutomaticSize": { "type": "enum", "enum": "AutomaticSize", "default": "\"None\"", "doc": "Grow to fit children / text." },
+        "AbsolutePosition": { "type": "Vector2", "readonly": true, "doc": "Screen position in pixels (read-only)." },
+        "AbsoluteSize": { "type": "Vector2", "readonly": true, "doc": "Size in pixels (read-only)." }
+      }
+    },
+    "GuiObject": { "base": "GuiBase", "abstract": true, "props": {} },
+    "GuiButton": {
+      "base": "GuiObject", "abstract": true,
+      "props": {
+        "AutoButtonColor": { "type": "boolean", "default": "true", "doc": "Lighten on hover, darken on press." }
+      }
+    },
+    "ScreenGui": {
+      "base": "GuiBase", "doc": "Top-level container covering the viewport. Creating one starts the renderer.",
+      "props": {
+        "Enabled": { "type": "boolean", "default": "true", "doc": "false hides the whole UI." },
+        "DisplayOrder": { "type": "number", "default": "0", "doc": "Order between ScreenGuis." },
+        "IgnoreGuiInset": { "type": "boolean", "default": "true", "doc": "false keeps the UI below the top bar." }
+      }
+    },
+    "Frame": { "base": "GuiObject", "doc": "Plain rectangle container.", "props": {} },
+    "CanvasGroup": {
+      "base": "GuiObject", "doc": "Fades and tints its whole subtree.",
+      "props": {
+        "GroupTransparency": { "type": "number", "default": "0" },
+        "GroupColor3": { "type": "Color3", "default": "Color3.new(1, 1, 1)" }
+      }
+    },
+    "TextLabel": { "base": "GuiObject", "text": true, "doc": "Text display. Background is transparent by default.", "props": {} },
+    "TextButton": { "base": "GuiButton", "text": true, "doc": "Clickable text. Use the Activated or MouseButton1Click event.", "props": {} },
+    "TextBox": {
+      "base": "GuiObject", "text": true, "doc": "Editable text field. FocusLost(enterPressed) fires when editing ends.",
+      "props": {
+        "PlaceholderText": { "type": "string", "default": "\"\"" },
+        "PlaceholderColor3": { "type": "Color3", "default": "Color3.fromRGB(140, 146, 165)" },
+        "ClearTextOnFocus": { "type": "boolean", "default": "false" },
+        "MultiLine": { "type": "boolean", "default": "false" },
+        "MaxLength": { "type": "number", "default": "4096" },
+        "TextEditable": { "type": "boolean", "default": "true" },
+        "CursorPosition": { "type": "number", "default": "-1" }
+      }
+    },
+    "ImageLabel": {
+      "base": "GuiObject", "image": true, "doc": "Image from Drawing Image.Data. Rounded by UICorner.", "props": {}
+    },
+    "ImageButton": { "base": "GuiButton", "image": true, "doc": "Clickable image.", "props": {} },
+    "ScrollingFrame": {
+      "base": "GuiObject", "doc": "Scrollable container (wheel + scrollbar drag).",
+      "props": {
+        "CanvasSize": { "type": "UDim2", "default": "UDim2.new()" },
+        "CanvasPosition": { "type": "Vector2", "default": "Vector2.new(0, 0)" },
+        "AbsoluteCanvasSize": { "type": "Vector2", "readonly": true },
+        "AutomaticCanvasSize": { "type": "enum", "enum": "AutomaticSize", "default": "\"Y\"" },
+        "ScrollingEnabled": { "type": "boolean", "default": "true" },
+        "ScrollingDirection": { "type": "enum", "enum": "ScrollingDirection", "default": "\"Y\"" },
+        "ScrollBarThickness": { "type": "number", "default": "5" },
+        "ScrollBarImageColor3": { "type": "Color3", "default": "Color3.fromRGB(113, 125, 155)" },
+        "ScrollBarImageTransparency": { "type": "number", "default": "0.1" }
+      }
+    },
+    "UIComponent": { "base": "Instance", "abstract": true, "modifier": true, "props": {} },
+    "UIConstraint": { "base": "UIComponent", "abstract": true, "props": {} },
+    "UILayout": {
+      "base": "UIComponent", "abstract": true,
+      "props": {
+        "FillDirection": { "type": "enum", "enum": "FillDirection", "default": "\"Vertical\"" },
+        "SortOrder": { "type": "enum", "enum": "SortOrder", "default": "\"LayoutOrder\"" },
+        "HorizontalAlignment": { "type": "enum", "enum": "HorizontalAlignment", "default": "\"Left\"" },
+        "VerticalAlignment": { "type": "enum", "enum": "VerticalAlignment", "default": "\"Top\"" },
+        "AbsoluteContentSize": { "type": "Vector2", "readonly": true }
+      }
+    },
+    "UICorner": {
+      "base": "UIComponent", "doc": "Rounds the parent's background, strokes, gradient, image and hit area.",
+      "props": {
+        "CornerRadius": { "type": "UDim", "default": "UDim.new(0, 8)", "doc": "UDim or a number (pixels). Scale 0.5 = pill / circle." }
+      }
+    },
+    "UIStroke": {
+      "base": "UIComponent", "doc": "Outline around the parent (or its text, in Contextual mode on text objects).",
+      "props": {
+        "Color": { "type": "Color3", "default": "Color3.fromRGB(75, 82, 103)" },
+        "Thickness": { "type": "number", "default": "1" },
+        "Transparency": { "type": "number", "default": "0" },
+        "Enabled": { "type": "boolean", "default": "true" },
+        "ApplyStrokeMode": { "type": "enum", "enum": "ApplyStrokeMode", "default": "\"Contextual\"", "doc": "Contextual on a text object outlines the text; Border always outlines the box." },
+        "BorderStrokePosition": { "type": "enum", "enum": "BorderStrokePosition", "default": "\"Outer\"" },
+        "LineJoinMode": { "type": "enum", "enum": "LineJoinMode", "default": "\"Round\"" }
+      }
+    },
+    "UIGradient": {
+      "base": "UIComponent", "doc": "Multiplies the parent's background (and text/image) by a gradient.",
+      "props": {
+        "Color": { "type": "ColorSequence", "default": "{ Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0) }", "doc": "ColorSequence, Color3, a list of Color3 or {{time, Color3}, ...}." },
+        "Transparency": { "type": "NumberSequence", "default": "NumberSequence.new(0, 1)", "doc": "NumberSequence, number or a list." },
+        "Rotation": { "type": "number", "default": "0", "doc": "Degrees, any angle." },
+        "Offset": { "type": "Vector2", "default": "Vector2.new(0, 0)" },
+        "Enabled": { "type": "boolean", "default": "true" },
+        "ApplyToText": { "type": "boolean", "default": "false", "doc": "Drawui extension. false keeps text / image colours untinted (default true, like Roblox)." }
+      }
+    },
+    "UIShadow": {
+      "base": "UIComponent", "doc": "Drawui extension: soft drop shadow behind the parent.",
+      "props": {
+        "Color": { "type": "Color3", "default": "Color3.new(0, 0, 0)" },
+        "Transparency": { "type": "number", "default": "0.5" },
+        "Offset": { "type": "Vector2", "default": "Vector2.new(0, 6)" },
+        "Blur": { "type": "number", "default": "18" },
+        "Spread": { "type": "number", "default": "0" },
+        "Enabled": { "type": "boolean", "default": "true" }
+      }
+    },
+    "UIPadding": {
+      "base": "UIComponent", "doc": "Insets the parent's content. Numbers are pixel offsets.",
+      "props": {
+        "PaddingLeft": { "type": "UDim", "default": "UDim.new(0, 8)" },
+        "PaddingRight": { "type": "UDim", "default": "UDim.new(0, 8)" },
+        "PaddingTop": { "type": "UDim", "default": "UDim.new(0, 8)" },
+        "PaddingBottom": { "type": "UDim", "default": "UDim.new(0, 8)" }
+      }
+    },
+    "UIScale": {
+      "base": "UIComponent", "doc": "Scales the parent and its descendants.",
+      "props": { "Scale": { "type": "number", "default": "1" } }
+    },
+    "UIAspectRatioConstraint": {
+      "base": "UIConstraint",
+      "props": {
+        "AspectRatio": { "type": "number", "default": "1" },
+        "DominantAxis": { "type": "enum", "enum": "DominantAxis", "default": "\"Width\"" },
+        "AspectType": { "type": "enum", "enum": "AspectType", "default": "\"FitWithinMaxSize\"" }
+      }
+    },
+    "UISizeConstraint": {
+      "base": "UIConstraint",
+      "props": {
+        "MinSize": { "type": "Vector2", "default": "Vector2.new(0, 0)" },
+        "MaxSize": { "type": "Vector2", "default": "Vector2.new(math.huge, math.huge)" }
+      }
+    },
+    "UITextSizeConstraint": {
+      "base": "UIConstraint", "doc": "Limits the size chosen by TextScaled.",
+      "props": {
+        "MinTextSize": { "type": "number", "default": "1" },
+        "MaxTextSize": { "type": "number", "default": "100" }
+      }
+    },
+    "UIListLayout": {
+      "base": "UILayout", "doc": "Stacks children vertically or horizontally.",
+      "props": {
+        "Padding": { "type": "UDim", "default": "UDim.new(0, 8)", "doc": "Gap between children (UDim or number)." },
+        "Wraps": { "type": "boolean", "default": "false", "doc": "Wrap to a new line when the row is full." }
+      }
+    },
+    "UIGridLayout": {
+      "base": "UILayout", "doc": "Places children in a grid of equal cells.",
+      "props": {
+        "CellSize": { "type": "UDim2", "default": "UDim2.fromOffset(100, 40)" },
+        "CellPadding": { "type": "UDim2", "default": "UDim2.fromOffset(8, 8)" },
+        "FillDirectionMaxCells": { "type": "number", "default": "0" }
+      }
+    }
+  },
+  "textProps": {
+    "Text": { "type": "string", "default": "\"Text\"" },
+    "TextColor3": { "type": "Color3", "default": "Color3.fromRGB(255, 255, 255)" },
+    "TextSize": { "type": "number", "default": "16" },
+    "Font": { "type": "number", "default": "UI.Fonts.UI", "doc": "UI.Fonts.UI (0), System (1), Plex (2), Monospace (3)." },
+    "TextTransparency": { "type": "number", "default": "0" },
+    "TextXAlignment": { "type": "enum", "enum": "TextXAlignment", "default": "\"Left\"" },
+    "TextYAlignment": { "type": "enum", "enum": "TextYAlignment", "default": "\"Center\"" },
+    "TextWrapped": { "type": "boolean", "default": "true" },
+    "TextScaled": { "type": "boolean", "default": "true" },
+    "LineHeight": { "type": "number", "default": "1.15" },
+    "TextStrokeTransparency": { "type": "number", "default": "0" },
+    "TextStrokeColor3": { "type": "Color3", "default": "Color3.new(0, 0, 0)" },
+    "TextBounds": { "type": "Vector2", "readonly": true }
+  },
+  "imageProps": {
+    "Image": { "type": "string", "default": "\"\"", "doc": "Passed to Drawing Image.Data." },
+    "ImageColor3": { "type": "Color3", "default": "Color3.fromRGB(255, 255, 255)" },
+    "ImageTransparency": { "type": "number", "default": "0" }
+  },
+  "sugar": {
+    "Corner": { "class": "UICorner", "snippet": "Corner = ${1:8}", "doc": "Adds a UICorner. Number, UDim or { CornerRadius = ... }." },
+    "Stroke": { "class": "UIStroke", "snippet": "Stroke = { Color = ${1:Color3.fromRGB(60, 66, 85)}, Thickness = ${2:1} }", "doc": "Adds a UIStroke. Color3, thickness number, true or a props table." },
+    "Gradient": { "class": "UIGradient", "snippet": "Gradient = { Color = { ${1:Color3.fromRGB(100, 140, 255)}, ${2:Color3.fromRGB(150, 110, 255)} }, Rotation = ${3:0} }", "doc": "Adds a UIGradient. List of Color3, ColorSequence or a props table." },
+    "Shadow": { "class": "UIShadow", "snippet": "Shadow = ${1:true}", "doc": "Adds a UIShadow. true or a props table." },
+    "Padding": { "class": "UIPadding", "snippet": "Padding = ${1:8}", "doc": "Adds a UIPadding. Number / UDim for all sides, or { Left, Right, Top, Bottom, Horizontal, Vertical }.", "keys": ["Left", "Right", "Top", "Bottom", "Horizontal", "Vertical"] },
+    "Scale": { "class": "UIScale", "snippet": "Scale = ${1:1}", "doc": "Adds a UIScale." },
+    "AspectRatio": { "class": "UIAspectRatioConstraint", "snippet": "AspectRatio = ${1:1}", "doc": "Adds a UIAspectRatioConstraint." },
+    "SizeLimit": { "class": "UISizeConstraint", "snippet": "SizeLimit = { MinSize = ${1:Vector2.new(0, 0)}, MaxSize = ${2:Vector2.new(400, 300)} }", "doc": "Adds a UISizeConstraint." },
+    "TextSizeLimit": { "class": "UITextSizeConstraint", "snippet": "TextSizeLimit = { MaxTextSize = ${1:20} }", "doc": "Adds a UITextSizeConstraint." },
+    "List": { "class": "UIListLayout", "snippet": "List = ${1:8}", "doc": "Adds a UIListLayout. Padding number or a props table." },
+    "Grid": { "class": "UIGridLayout", "snippet": "Grid = { CellSize = ${1:UDim2.fromOffset(100, 40)}, CellPadding = ${2:UDim2.fromOffset(8, 8)} }", "doc": "Adds a UIGridLayout." }
+  },
+  "events": {
+    "Activated": "(input, clickCount) Button clicked.",
+    "MouseButton1Click": "() Left click.",
+    "MouseButton1Down": "(x, y)",
+    "MouseButton1Up": "(x, y)",
+    "MouseButton2Click": "() Right click.",
+    "MouseEnter": "(x, y)",
+    "MouseLeave": "(x, y)",
+    "MouseMoved": "(x, y)",
+    "InputBegan": "(input, processed)",
+    "InputChanged": "(input, processed)",
+    "InputEnded": "(input, processed)",
+    "Focused": "() TextBox gained focus.",
+    "FocusLost": "(enterPressed, input) TextBox lost focus.",
+    "Changed": "(propertyName)",
+    "ChildAdded": "(child)",
+    "ChildRemoved": "(child)",
+    "AncestryChanged": "(child, parent)",
+    "AttributeChanged": "(name)",
+    "Destroying": "()"
+  },
+  "members": {
+    "New": { "snippet": "New \"${1:Frame}\" {\n\t$0\n}", "doc": "Declarative constructor: `UI.New \"Frame\" { props, [UI.Children] = {...} }`." },
+    "new": { "snippet": "new(\"${1:Frame}\", { $0 })", "doc": "`UI.new(class, props, children)` — Roblox-style constructor." },
+    "Create": { "snippet": "Create(\"${1:Frame}\", { $0 })", "doc": "Alias of UI.new." },
+    "Children": { "doc": "Key for child objects in a builder table: `[UI.Children] = { ... }`." },
+    "Ref": { "doc": "Key receiving the created object: `[UI.Ref] = function(obj) end` or a table (sets `.value`)." },
+    "OnEvent": { "snippet": "OnEvent \"${1:Activated}\"", "doc": "Builder key: `[UI.OnEvent \"Activated\"] = function() end`." },
+    "OnChange": { "snippet": "OnChange \"${1:Text}\"", "doc": "Builder key: `[UI.OnChange \"Text\"] = function(value) end`." },
+    "Hydrate": { "snippet": "Hydrate(${1:object}) {\n\t$0\n}", "doc": "Apply builder props to an existing object." },
+    "Tween": { "snippet": "Tween(${1:object}, TweenInfo.new(${2:0.2}), { $0 })", "doc": "Tween number / Color3 / Vector2 / UDim / UDim2 properties." },
+    "MakeDraggable": { "snippet": "MakeDraggable(${1:window}${2:, handle})", "doc": "Drag `target` by `handle` (defaults to target)." },
+    "Refresh": { "snippet": "Refresh()", "doc": "Force an immediate layout + redraw." },
+    "Destroy": { "snippet": "Destroy()", "doc": "Destroy every UI object and disconnect the renderer." },
+    "GetStats": { "snippet": "GetStats()", "doc": "{ Objects, Drawings, Roots, Connections, Tweens }." },
+    "MeasureText": { "snippet": "MeasureText(${1:\"text\"}, ${2:16}, ${3:UI.Fonts.UI})", "doc": "Returns text bounds (Vector2)." },
+    "GetFocusedTextBox": { "snippet": "GetFocusedTextBox()", "doc": "Focused TextBox or nil." },
+    "GetGuiObjectsAtPosition": { "snippet": "GetGuiObjectsAtPosition(${1:x}, ${2:y})", "doc": "Interactive objects under a point, topmost first." },
+    "RegisterClass": { "snippet": "RegisterClass(\"${1:Name}\", {\n\tBase = \"${2:UIComponent}\",\n\t$0\n})", "doc": "Register a custom class / modifier (see src/Core/Registry.luau for hooks)." },
+    "RegisterSugar": { "snippet": "RegisterSugar(\"${1:Key}\", function(node, value)\n\t$0\nend)", "doc": "Add a builder shorthand key." },
+    "GetClass": { "snippet": "GetClass(\"${1:Frame}\")", "doc": "Class definition table." },
+    "GetClasses": { "snippet": "GetClasses()", "doc": "Names of all creatable classes." },
+    "Signal": { "snippet": "Signal()", "doc": "New signal with Connect / Once / Wait / Fire." },
+    "Fonts": { "doc": "{ UI = 0, System = 1, Plex = 2, Monospace = 3 }" },
+    "Version": { "doc": "Library version string." },
+    "Builder": { "doc": "Builder namespace (New, Children, Ref, OnEvent, OnChange, Hydrate, RegisterSugar)." }
+  },
+  "methods": {
+    "Destroy": "Destroy()",
+    "Clone": "Clone()",
+    "ClearAllChildren": "ClearAllChildren()",
+    "GetChildren": "GetChildren()",
+    "GetDescendants": "GetDescendants()",
+    "FindFirstChild": "FindFirstChild(\"${1:Name}\")",
+    "FindFirstChildOfClass": "FindFirstChildOfClass(\"${1:UICorner}\")",
+    "FindFirstChildWhichIsA": "FindFirstChildWhichIsA(\"${1:GuiObject}\")",
+    "FindFirstAncestor": "FindFirstAncestor(\"${1:Name}\")",
+    "FindFirstAncestorOfClass": "FindFirstAncestorOfClass(\"${1:ScreenGui}\")",
+    "IsA": "IsA(\"${1:GuiButton}\")",
+    "IsDescendantOf": "IsDescendantOf(${1:parent})",
+    "GetPropertyChangedSignal": "GetPropertyChangedSignal(\"${1:Text}\")",
+    "SetAttribute": "SetAttribute(\"${1:key}\", ${2:value})",
+    "GetAttribute": "GetAttribute(\"${1:key}\")",
+    "GetAttributes": "GetAttributes()",
+    "Tween": "Tween(TweenInfo.new(${1:0.2}), { $0 })",
+    "CaptureFocus": "CaptureFocus()",
+    "ReleaseFocus": "ReleaseFocus()",
+    "IsFocused": "IsFocused()"
+  }
+}
