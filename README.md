@@ -45,6 +45,7 @@ New "Frame" {
 - [Custom classes and sugar](#custom-classes-and-sugar)
 - [Limitations](#limitations)
 - [VS Code extension](#vs-code-extension)
+- [Roblox Studio exporter](#roblox-studio-exporter)
 - [Development](#development)
 
 ## Installation
@@ -365,6 +366,18 @@ cd vscode
 .\build-vsix.ps1
 code --install-extension .\drawui-1.0.0.vsix
 ```
+
+## Roblox Studio exporter
+
+[`studio-plugin/`](studio-plugin) is a Roblox Studio plugin that exports a GUI you built in Studio as a Drawui script.
+Select a ScreenGui, click **Export**, and paste the generated script into your executor. Install it with:
+
+```powershell
+cd studio-plugin
+.uild.ps1 -Install
+```
+
+See [studio-plugin/README.md](studio-plugin/README.md) for details.
 
 ## Development
 
