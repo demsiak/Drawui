@@ -1,0 +1,30 @@
+# Module load order for the bundle. Each module is `return function(UI, ctx) ... end`.
+# Modules only reference each other through `ctx` at call time, so the order matters only
+# for registration (base classes before subclasses, Registry before any RegisterClass).
+Core/Util.luau
+Core/Signal.luau
+Core/Registry.luau
+Core/Object.luau
+Render/Pool.luau
+Render/Shapes.luau
+Render/Text.luau
+Layout/Layout.luau
+Render/Renderer.luau
+Input/Input.luau
+Animation/Tween.luau
+Classes/Base.luau
+Classes/ScreenGui.luau
+Classes/Frame.luau
+Classes/TextLabel.luau
+Classes/TextButton.luau
+Classes/TextBox.luau
+Classes/Image.luau
+Classes/ScrollingFrame.luau
+Modifiers/UICorner.luau
+Modifiers/UIStroke.luau
+Modifiers/UIGradient.luau
+Modifiers/UIShadow.luau
+Modifiers/UIPadding.luau
+Modifiers/Constraints.luau
+Modifiers/Layouts.luau
+Builder/Builder.luau
