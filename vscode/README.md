@@ -9,7 +9,7 @@ Completion, hover docs and snippets for [Drawui](https://github.com/demsiak/Draw
 - `TextXAlignment = "` and other enum properties: allowed values
 - `UI.` library members, `obj:` methods, `label.` properties for objects created with `New "..."`
 - hover on classes, properties, sugar keys and events
-- snippets: `drawui`, `dui-window`, `dui-button`, `dui-label`, `dui-textbox`, `dui-toggle`, `dui-scroll`
+- snippets: `drawui` (load from GitHub), `dui-load-file`, `dui-window`, `dui-button`, `dui-label`, `dui-textbox`, `dui-toggle`, `dui-scroll`
 
 API data lives in `api.json`; update it when the library adds properties.
 

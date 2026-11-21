@@ -1,4 +1,4 @@
-local UI = loadstring(readfile("Drawui.luau"))()
+local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/demsiak/Drawui/main/Drawui.luau"))()
 local env = (type(getgenv) == "function" and getgenv()) or _G
 if env.DrawuiDemo and env.DrawuiDemo.Cleanup then env.DrawuiDemo.Cleanup() end
 local uis = game:GetService("UserInputService")

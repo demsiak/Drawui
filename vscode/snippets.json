@@ -1,13 +1,13 @@
 {
   "Drawui: load": {
     "prefix": ["drawui", "dui-load"],
-    "body": ["local UI = loadstring(readfile(\"Drawui.luau\"))()", "local New, Children = UI.New, UI.Children", "$0"],
-    "description": "Load Drawui from the workspace folder"
-  },
-  "Drawui: load from GitHub": {
-    "prefix": "dui-load-github",
     "body": ["local UI = loadstring(game:HttpGet(\"https://raw.githubusercontent.com/demsiak/Drawui/main/Drawui.luau\"))()", "local New, Children = UI.New, UI.Children", "$0"],
-    "description": "Load Drawui over HTTP"
+    "description": "Load Drawui from GitHub"
+  },
+  "Drawui: load from file": {
+    "prefix": "dui-load-file",
+    "body": ["local UI = loadstring(readfile(\"Drawui.luau\"))()", "local New, Children = UI.New, UI.Children", "$0"],
+    "description": "Load Drawui from the executor workspace folder"
   },
   "Drawui: window": {
     "prefix": "dui-window",

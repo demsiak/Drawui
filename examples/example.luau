@@ -1,4 +1,4 @@
-local UI = loadstring(readfile("Drawui.luau"))()
+local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/demsiak/Drawui/main/Drawui.luau"))()
 local New, Children = UI.New, UI.Children
 
 local clicks = 0
