@@ -171,7 +171,7 @@ return function(UI, ctx)
 
     function ctx.start()
         if running then return end
-        assert(Drawing and type(Drawing.new) == "function", "Drawui requires Drawing.new (Potassium)")
+        assert(Drawing and type(Drawing.new) == "function", "Drawui requires an executor with Drawing.new")
         running = true
         local function connect(event, fn) table.insert(ctx.connections, event:Connect(fn)) end
         connect(UIS.InputBegan, function(input)

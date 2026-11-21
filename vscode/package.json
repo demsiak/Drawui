@@ -1,7 +1,7 @@
 {
   "name": "drawui",
   "displayName": "Drawui",
-  "description": "Completion, hover docs and snippets for the Drawui Potassium UI library.",
+  "description": "Completion, hover docs and snippets for the Drawui UI library for Roblox executors.",
   "version": "0.1.0",
   "publisher": "demsiak",
   "license": "MIT",

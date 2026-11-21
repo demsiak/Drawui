@@ -1,7 +1,7 @@
 # Drawui
 
-Roblox-style UI for [Potassium](https://docs.potassium.pro/api-reference/introduction), drawn entirely with
-`Drawing.new`. It needs no ScreenGui instances, no hooks and no remotes.
+Roblox-style UI for Roblox executors, drawn entirely with the `Drawing` library (`Drawing.new`).
+It needs no ScreenGui instances, no hooks and no remotes.
 
 You write UI the way you would in Roblox Studio: `Frame`, `TextButton`, `UDim2`, `UICorner`,
 `UIListLayout`, events, tweens. Drawui handles layout, rendering, clipping and input.
@@ -49,9 +49,12 @@ New "Frame" {
 
 ## Installation
 
+Your executor needs the `Drawing` library with the `Square`, `Circle`, `Line`, `Text`, `Image`,
+`Triangle` and `Quad` types. Drawui is tested on Potassium.
+
 ### From GitHub (recommended)
 
-This needs no files: paste the line into Potassium and run it.
+This needs no files: paste the line into your executor and run it.
 
 ```lua
 local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/demsiak/Drawui/main/Drawui.luau"))()
@@ -66,7 +69,7 @@ local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/demsiak/Dr
 
 ### From a local file
 
-This works offline. Copy `Drawui.luau` into Potassium's `workspace` folder, then:
+This works offline. Copy `Drawui.luau` into your executor's `workspace` folder, then:
 
 ```lua
 local UI = loadstring(readfile("Drawui.luau"))()
@@ -175,7 +178,7 @@ All GUI objects share `Name`, `Visible`, `Position`, `Size`, `AnchorPoint`, `Bac
 | `ImageLabel`, `ImageButton` | `Image` (passed to Drawing `Image.Data`), `ImageColor3`, `ImageTransparency` |
 | `ScrollingFrame` | `CanvasSize`, `CanvasPosition`, `AutomaticCanvasSize`, `ScrollingEnabled`, `ScrollingDirection`, `ScrollBarThickness`, `ScrollBarImageColor3`, `ScrollBarImageTransparency` |
 
-`Font` takes `UI.Fonts.UI`, `UI.Fonts.System`, `UI.Fonts.Plex` or `UI.Fonts.Monospace` (Potassium's `Drawing.Fonts`).
+`Font` takes `UI.Fonts.UI`, `UI.Fonts.System`, `UI.Fonts.Plex` or `UI.Fonts.Monospace` (`Drawing.Fonts`).
 
 ## Modifiers
 
@@ -343,7 +346,7 @@ documented at the top of [`src/Core/Registry.luau`](src/Core/Registry.luau).
 
 - Drawing has no scissor or UV API. Rectangles, polygons, lines and text are clipped in software
   (text per character), but a partially clipped **image** is hidden.
-- Translucent rounded shapes can show very faint lines inside their corners, because Potassium
+- Translucent rounded shapes can show very faint lines inside their corners, because the executor
   anti-aliases each primitive separately. Opaque shapes are drawn with overlapping pieces and have no seams.
 - The TextBox cursor is drawn for single-line text only.
 - Tweens don't support `RepeatCount` or `Reverses`.
